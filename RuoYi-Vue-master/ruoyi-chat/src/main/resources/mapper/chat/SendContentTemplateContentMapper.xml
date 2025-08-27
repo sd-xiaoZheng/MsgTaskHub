@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.SendContentTemplateContentMapper">
+    
+    <resultMap type="SendContentTemplateContent" id="SendContentTemplateContentResult">
+        <result property="contentId"    column="content_id"    />
+        <result property="templateId"    column="template_id"    />
+        <result property="templateContent"    column="template_content"    />
+        <result property="isUse"    column="is_use"    />
+    </resultMap>
+
+    <sql id="selectSendContentTemplateContentVo">
+        select content_id, template_id, template_content,is_use from send_content_template_content
+    </sql>
+
+    <select id="selectSendContentTemplateContentList" parameterType="SendContentTemplateContent" resultMap="SendContentTemplateContentResult">
+        <include refid="selectSendContentTemplateContentVo"/>
+        <where>  
+            <if test="templateId != null  and templateId != ''"> and template_id = #{templateId}</if>
+            <if test="templateContent != null  and templateContent != ''"> and template_content like concat('%', #{templateContent}, '%')</if>
+            <if test="isUse != null "> and is_use like concat('%', #{isUse}, '%')</if>
+        </where>
+    </select>
+    
+    <select id="selectSendContentTemplateContentByContentId" parameterType="String" resultMap="SendContentTemplateContentResult">
+        <include refid="selectSendContentTemplateContentVo"/>
+        where content_id = #{contentId}
+    </select>
+
+    <insert id="insertSendContentTemplateContent" parameterType="SendContentTemplateContent">
+        insert into send_content_template_content
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="contentId != null">content_id,</if>
+            <if test="templateId != null">template_id,</if>
+            <if test="templateContent != null">template_content,</if>
+            <if test="isUse != null">is_use,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="contentId != null">#{contentId},</if>
+            <if test="templateId != null">#{templateId},</if>
+            <if test="templateContent != null">#{templateContent},</if>
+            <if test="isUse != null">#{isUse},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSendContentTemplateContent" parameterType="SendContentTemplateContent">
+        update send_content_template_content
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="templateId != null">template_id = #{templateId},</if>
+            <if test="templateContent != null">template_content = #{templateContent},</if>
+            <if test="isUse != null">is_use = #{isUse},</if>
+        </trim>
+        where content_id = #{contentId}
+    </update>
+
+    <delete id="deleteSendContentTemplateContentByContentId" parameterType="String">
+        delete from send_content_template_content where content_id = #{contentId}
+    </delete>
+
+    <delete id="deleteSendContentTemplateContentByContentIds" parameterType="String">
+        delete from send_content_template_content where content_id in 
+        <foreach item="contentId" collection="array" open="(" separator="," close=")">
+            #{contentId}
+        </foreach>
+    </delete>
+
+    <insert id="insertSendContentTemplateContentBatch" parameterType="java.util.List">
+        INSERT INTO send_content_template_content (content_id, template_id, template_content,is_use)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.contentId}, #{item.templateId}, #{item.templateContent},#{item.isUse})
+        </foreach>
+    </insert>
+
+    <update id="updateSendContentTemplateContent2IsUseBatch">
+        UPDATE send_content_template_content
+        SET is_use = 1
+        WHERE content_id IN
+        <foreach item="item" collection="list" open="(" separator="," close=")">
+            #{item.contentId}
+        </foreach>
+    </update>
+
+    <update id="updateSendContentTemplateContentReset">
+        UPDATE send_content_template_content
+        SET is_use = 0
+        WHERE template_id =#{templateId}
+    </update>
+
+    <select id="selectSendContentTemplateContentByContentIds"
+             resultMap="SendContentTemplateContentResult">
+        <include refid="selectSendContentTemplateContentVo"/>
+        WHERE template_id IN
+        <foreach collection="collection" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <delete id="emptyByTemplateId">
+        delete from send_content_template_content where template_id in
+        <foreach item="templateId" collection="collection" open="(" separator="," close=")">
+            #{templateId}
+        </foreach>
+    </delete>
+
+    <select id="countContentByTemplateIds" resultType="map">
+        SELECT
+        template_id as templateId,
+        COUNT(*) as totalCount,
+        SUM(is_use) as usedCount
+        FROM
+        send_content_template_content
+        WHERE
+        template_id IN
+        <foreach collection="collection" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        GROUP BY
+        template_id
+    </select>
+</mapper>

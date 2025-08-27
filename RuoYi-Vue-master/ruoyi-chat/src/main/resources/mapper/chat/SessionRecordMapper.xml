@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.SessionRecordMapper">
+    
+    <resultMap type="SessionRecord" id="SessionRecordResult">
+        <result property="sessionId"    column="session_id"    />
+        <result property="custId"    column="cust_id"    />
+        <result property="custContact"    column="cust_contact"    />
+        <result property="beginTime"    column="begin_time"    />
+        <result property="latestChatTime"    column="latest_chat_time"    />
+        <result property="messageCount"    column="message_count"    />
+        <result property="isFavorite"    column="is_favorite"    />
+        <result property="isPinned"    column="is_pinned"    />
+        <result property="messageType"    column="message_type"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="endText"    column="end_text"    />
+        <result property="account"    column="account"    />
+    </resultMap>
+
+    <resultMap id="CountResultMap" type="CountResult">
+        <result property="item" column="cust_id" />
+        <result property="count" column="count" />
+    </resultMap>
+
+    <sql id="selectSessionRecordVo">
+        select session_id, cust_id, cust_contact, begin_time, latest_chat_time, message_count, is_favorite, is_pinned, message_type, project_id,end_text,account from session_record
+    </sql>
+
+    <select id="selectSessionRecordList" parameterType="SessionRecord" resultMap="SessionRecordResult">
+        <include refid="selectSessionRecordVo"/>
+        <where>  
+            <if test="custId != null  and custId != ''"> and cust_id = #{custId}</if>
+            <if test="custContact != null  and custContact != ''"> and cust_contact like concat('%',#{custContact},'%') </if>
+            <if test="beginTime != null "> and begin_time = #{beginTime}</if>
+            <if test="latestChatTime != null "> and latest_chat_time = #{latestChatTime}</if>
+            <if test="messageCount != null "> and message_count = #{messageCount}</if>
+            <if test="isFavorite != null "> and is_favorite = #{isFavorite}</if>
+            <if test="isPinned != null "> and is_pinned = #{isPinned}</if>
+            <if test="messageType != null "> and message_type = #{messageType}</if>
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="endText != null  and endText != ''"> and end_text = #{endText}</if>
+            <if test="account != null  and account != ''"> and account = #{account}</if>
+        </where>
+        order by is_pinned desc,latest_chat_time desc
+    </select>
+    
+    <select id="selectSessionRecordBySessionId" parameterType="String" resultMap="SessionRecordResult">
+        <include refid="selectSessionRecordVo"/>
+        where session_id = #{sessionId}
+    </select>
+
+    <insert id="insertSessionRecord" parameterType="SessionRecord">
+        insert into session_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="sessionId != null">session_id,</if>
+            <if test="custId != null">cust_id,</if>
+            <if test="custContact != null">cust_contact,</if>
+            <if test="beginTime != null">begin_time,</if>
+            <if test="latestChatTime != null">latest_chat_time,</if>
+            <if test="messageCount != null">message_count,</if>
+            <if test="isFavorite != null">is_favorite,</if>
+            <if test="isPinned != null">is_pinned,</if>
+            <if test="messageType != null">message_type,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="endText != null">end_text,</if>
+            <if test="account != null">account,</if>
+         </trim>
+        select
+        <trim suffixOverrides=",">
+<!--        <trim prefix="values (" suffix=")" suffixOverrides=",">-->
+            <if test="sessionId != null">#{sessionId},</if>
+            <if test="custId != null">#{custId},</if>
+            <if test="custContact != null">#{custContact},</if>
+            <if test="beginTime != null">#{beginTime},</if>
+            <if test="latestChatTime != null">#{latestChatTime},</if>
+            <if test="messageCount != null">#{messageCount},</if>
+            <if test="isFavorite != null">#{isFavorite},</if>
+            <if test="isPinned != null">#{isPinned},</if>
+            <if test="messageType != null">#{messageType},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="endText != null">#{endText},</if>
+            <if test="account != null">#{account}</if>
+         </trim>
+        <if test="custContact != null and custId != null">
+        FROM DUAL
+        WHERE NOT EXISTS (
+        SELECT 1 FROM session_record WHERE cust_contact = #{custContact} and cust_id = #{custId}
+        )
+        </if>
+    </insert>
+
+    <update id="updateSessionRecord" parameterType="SessionRecord">
+        update session_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="custId != null">cust_id = #{custId},</if>
+            <if test="custContact != null">cust_contact = #{custContact},</if>
+            <if test="beginTime != null">begin_time = #{beginTime},</if>
+            <if test="latestChatTime != null">latest_chat_time = #{latestChatTime},</if>
+            <if test="messageCount != null">message_count = #{messageCount},</if>
+            <if test="isFavorite != null">is_favorite = #{isFavorite},</if>
+            <if test="isPinned != null">is_pinned = #{isPinned},</if>
+            <if test="messageType != null">message_type = #{messageType},</if>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="endText != null">end_text = #{endText},</if>
+            <if test="account != null">account = #{account},</if>
+        </trim>
+        where session_id = #{sessionId}
+    </update>
+
+    <delete id="deleteSessionRecordBySessionId" parameterType="String">
+        delete from session_record where session_id = #{sessionId}
+    </delete>
+
+    <delete id="deleteSessionRecordBySessionIds" parameterType="String">
+        delete from session_record where session_id in 
+        <foreach item="sessionId" collection="array" open="(" separator="," close=")">
+            #{sessionId}
+        </foreach>
+    </delete>
+
+    <select id="selectSessionRecordByPhoneNum" resultMap="SessionRecordResult">
+        <include refid="selectSessionRecordVo"/>
+        where cust_contact = #{recipientList}
+    </select>
+
+    <select id="selectSessionRecordByMassMessage"  parameterType="SessionRecord" resultMap="SessionRecordResult">
+        <include refid="selectSessionRecordVo"/>
+        <where>
+            <if test="custId != null  and custId != ''"> and cust_id = #{custId}</if>
+            <if test="custContact != null  and custContact != ''"> and cust_contact like concat('%',#{custContact},'%') </if>
+            <if test="beginTime != null "> and begin_time = #{beginTime}</if>
+            <if test="latestChatTime != null "> and latest_chat_time = #{latestChatTime}</if>
+            <if test="messageCount != null "> and message_count = #{messageCount}</if>
+            <if test="isFavorite != null "> and is_favorite = #{isFavorite}</if>
+            <if test="isPinned != null "> and is_pinned = #{isPinned}</if>
+            <if test="messageType != null "> and message_type = #{messageType}</if>
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="endText != null  and endText != ''"> and end_text = #{endText}</if>
+            <if test="account != null  and account != ''"> and account = #{account}</if>
+        </where>
+        order by is_pinned desc,latest_chat_time desc
+    </select>
+
+    <select id="selectSessionRecordCountByUserId" resultType="int">
+        select count(0) from session_record where cust_id = #{userId}
+    </select>
+
+    <select id="selectCountByUserIdSet" resultMap="CountResultMap">
+        SELECT cust_id,count(0) as count FROM session_record WHERE cust_id in
+        <foreach item="id" collection="userIdSet" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        GROUP BY cust_id
+    </select>
+
+    <select id="selectSessionRecordAccount" resultMap="CountResultMap">
+        <include refid="selectSessionRecordVo"/>
+        where account = #{account}
+    </select>
+</mapper>

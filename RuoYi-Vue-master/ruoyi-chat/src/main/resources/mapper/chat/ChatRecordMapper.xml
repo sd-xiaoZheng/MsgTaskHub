@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.ChatRecordMapper">
+    
+    <resultMap type="ChatRecord" id="ChatRecordResult">
+        <result property="chatId"    column="chat_id"    />
+        <result property="chatInout"    column="chat_inout"    />
+        <result property="messageContent"    column="message_content"    />
+        <result property="sendTime"    column="send_time"    />
+        <result property="sessionId"    column="session_id"    />
+        <result property="success"    column="success"    />
+        <result property="id"    column="id"    />
+    </resultMap>
+
+    <sql id="selectChatRecordVo">
+        select chat_id, chat_inout, message_content, send_time, session_id, success, id from chat_record
+    </sql>
+
+    <select id="selectChatRecordList" parameterType="ChatRecord" resultMap="ChatRecordResult">
+        <include refid="selectChatRecordVo"/>
+        <where>  
+            <if test="chatInout != null "> and chat_inout = #{chatInout}</if>
+<!--            <if test="messageContent != null  and messageContent != ''"> and message_content like concat('%', #{messageContent}, '%')</if>-->
+            <if test="messageContent != null  and messageContent != ''"> and message_content = #{messageContent}</if>
+            <if test="sendTime != null "> and send_time = #{sendTime}</if>
+            <if test="sessionId != null  and sessionId != ''"> and session_id = #{sessionId}</if>
+            <if test="success != null  and success != ''"> and success = #{success}</if>
+            <if test="id != null and id != ''"> and id = #{id}</if>
+        </where>
+        order by chat_id
+    </select>
+    
+    <select id="selectChatRecordByChatId" parameterType="String" resultMap="ChatRecordResult">
+        <include refid="selectChatRecordVo"/>
+        where chat_id = #{chatId} order by chat_id
+    </select>
+
+    <insert id="insertChatRecord" parameterType="ChatRecord" useGeneratedKeys="true"  keyProperty="chatId"
+            keyColumn="chat_id">
+        insert into chat_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="chatId != null">chat_id,</if>
+            <if test="chatInout != null">chat_inout,</if>
+            <if test="messageContent != null">message_content,</if>
+            <if test="sendTime != null">send_time,</if>
+            <if test="sessionId != null">session_id,</if>
+            <if test="success != null">success,</if>
+            <if test="id != null">id,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="chatId != null">#{chatId},</if>
+            <if test="chatInout != null">#{chatInout},</if>
+            <if test="messageContent != null">#{messageContent},</if>
+            <if test="sendTime != null">#{sendTime},</if>
+            <if test="sessionId != null">#{sessionId},</if>
+            <if test="success != null">#{success},</if>
+            <if test="id != null">#{id},</if>
+         </trim>
+    </insert>
+
+    <update id="updateChatRecord" parameterType="ChatRecord">
+        update chat_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="chatInout != null">chat_inout = #{chatInout},</if>
+            <if test="messageContent != null">message_content = #{messageContent},</if>
+            <if test="sendTime != null">send_time = #{sendTime},</if>
+            <if test="sessionId != null">session_id = #{sessionId},</if>
+            <if test="success != null">success = #{success},</if>
+            <if test="id != null">id = #{id},</if>
+        </trim>
+        where chat_id = #{chatId}
+    </update>
+
+    <delete id="deleteChatRecordByChatId" parameterType="String">
+        delete from chat_record where chat_id = #{chatId}
+    </delete>
+
+    <delete id="deleteChatRecordByChatIds" parameterType="String">
+        delete from chat_record where chat_id in 
+        <foreach item="chatId" collection="array" open="(" separator="," close=")">
+            #{chatId}
+        </foreach>
+    </delete>
+
+    <select id="selectChatRecordEndBySessionId" resultMap="ChatRecordResult">
+        <include refid="selectChatRecordVo"/>
+        where session_id=#{sessionId} ORDER BY send_time DESC limit 1;
+    </select>
+</mapper>

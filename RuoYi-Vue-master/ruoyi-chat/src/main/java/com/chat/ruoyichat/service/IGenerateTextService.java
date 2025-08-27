@@ -1,0 +1,72 @@
+package com.chat.ruoyichat.service;
+
+import com.chat.ruoyichat.domain.GenerateText;
+import com.chat.ruoyichat.domain.vo.ContentGenerate;
+import com.chat.ruoyichat.domain.vo.EmbellishVo;
+import com.chat.ruoyichat.domain.vo.GenerateSetting;
+
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * GenerateTextService接口
+ * 
+ * @author ruoyi
+ * @date 2025-06-20
+ */
+public interface IGenerateTextService 
+{
+    /**
+     * 查询GenerateText
+     * 
+     * @param id GenerateText主键
+     * @return GenerateText
+     */
+    public GenerateText selectGenerateTextById(Long id);
+
+    /**
+     * 查询GenerateText列表
+     * 
+     * @param generateText GenerateText
+     * @return GenerateText集合
+     */
+    public List<GenerateText> selectGenerateTextList(GenerateText generateText);
+
+    /**
+     * 新增GenerateText
+     * 
+     * @param generateText GenerateText
+     * @return 结果
+     */
+    public int insertGenerateText(GenerateText generateText);
+
+    /**
+     * 修改GenerateText
+     * 
+     * @param generateText GenerateText
+     * @return 结果
+     */
+    public int updateGenerateText(GenerateText generateText);
+
+    /**
+     * 批量删除GenerateText
+     * 
+     * @param ids 需要删除的GenerateText主键集合
+     * @return 结果
+     */
+    public int deleteGenerateTextByIds(Long[] ids);
+
+    /**
+     * 删除GenerateText信息
+     * 
+     * @param id GenerateText主键
+     * @return 结果
+     */
+    public int deleteGenerateTextById(Long id);
+
+    void uploadText(ContentGenerate contentGenerate) throws IOException;
+
+    List<String> embellish(EmbellishVo embellishVo) throws IOException;
+
+    List<String> generate(GenerateSetting generateSetting);
+}

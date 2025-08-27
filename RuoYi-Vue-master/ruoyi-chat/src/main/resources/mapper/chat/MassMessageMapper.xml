@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.MassMessageMapper">
+    
+    <resultMap type="MassMessage" id="MassMessageResult">
+        <result property="messageId"    column="message_id"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="sendContent"    column="send_content"    />
+        <result property="sendTime"    column="send_time"    />
+        <result property="sendNum"    column="send_num"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="updateUser"    column="update_user"    />
+        <result property="createUser"    column="create_user"    />
+    </resultMap>
+
+    <sql id="selectMassMessageVo">
+        select message_id, project_id, send_content, send_time, send_num, create_time, update_time, update_user, create_user from mass_message
+    </sql>
+
+    <select id="selectMassMessageList" parameterType="MassMessage" resultMap="MassMessageResult">
+        <include refid="selectMassMessageVo"/>
+        <where>  
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="sendContent != null  and sendContent != ''"> and send_content = #{sendContent}</if>
+            <if test="sendTime != null "> and send_time = #{sendTime}</if>
+            <if test="sendNum != null "> and send_num = #{sendNum}</if>
+            <if test="updateUser != null  and updateUser != ''"> and update_user = #{updateUser}</if>
+            <if test="createUser != null  and createUser != ''"> and create_user = #{createUser}</if>
+        </where>
+    </select>
+    
+    <select id="selectMassMessageByMessageId" parameterType="String" resultMap="MassMessageResult">
+        <include refid="selectMassMessageVo"/>
+        where message_id = #{messageId}
+    </select>
+
+    <insert id="insertMassMessage" parameterType="MassMessage">
+        insert into mass_message
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="messageId != null">message_id,</if>
+            <if test="projectId != null and projectId != ''">project_id,</if>
+            <if test="sendContent != null and sendContent != ''">send_content,</if>
+            <if test="sendTime != null">send_time,</if>
+            <if test="sendNum != null">send_num,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="updateUser != null">update_user,</if>
+            <if test="createUser != null">create_user,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="messageId != null">#{messageId},</if>
+            <if test="projectId != null and projectId != ''">#{projectId},</if>
+            <if test="sendContent != null and sendContent != ''">#{sendContent},</if>
+            <if test="sendTime != null">#{sendTime},</if>
+            <if test="sendNum != null">#{sendNum},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="updateUser != null">#{updateUser},</if>
+            <if test="createUser != null">#{createUser},</if>
+         </trim>
+    </insert>
+
+    <update id="updateMassMessage" parameterType="MassMessage">
+        update mass_message
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="projectId != null and projectId != ''">project_id = #{projectId},</if>
+            <if test="sendContent != null and sendContent != ''">send_content = #{sendContent},</if>
+            <if test="sendTime != null">send_time = #{sendTime},</if>
+            <if test="sendNum != null">send_num = #{sendNum},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="createUser != null">create_user = #{createUser},</if>
+        </trim>
+        where message_id = #{messageId}
+    </update>
+
+    <delete id="deleteMassMessageByMessageId" parameterType="String">
+        delete from mass_message where message_id = #{messageId}
+    </delete>
+
+    <delete id="deleteMassMessageByMessageIds" parameterType="String">
+        delete from mass_message where message_id in 
+        <foreach item="messageId" collection="array" open="(" separator="," close=")">
+            #{messageId}
+        </foreach>
+    </delete>
+</mapper>

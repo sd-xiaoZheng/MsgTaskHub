@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.DeadAccountMapper">
+    
+    <resultMap type="DeadAccount" id="DeadAccountResult">
+        <result property="deadId"    column="dead_id"    />
+        <result property="accountType"    column="account_type"    />
+        <result property="accountNumber"    column="account_number"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="deadTime"    column="dead_time"    />
+        <result property="reason"    column="reason"    />
+    </resultMap>
+
+    <sql id="selectDeadAccountVo">
+        select dead_id, account_type, account_number, project_id, dead_time, reason from dead_account
+    </sql>
+
+    <select id="selectDeadAccountList" parameterType="DeadAccount" resultMap="DeadAccountResult">
+        <include refid="selectDeadAccountVo"/>
+        <where>  
+            <if test="accountType != null "> and account_type = #{accountType}</if>
+            <if test="accountNumber != null  and accountNumber != ''"> and account_number = #{accountNumber}</if>
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="deadTime != null "> and dead_time = #{deadTime}</if>
+            <if test="reason != null  and reason != ''"> and reason = #{reason}</if>
+        </where>
+    </select>
+    
+    <select id="selectDeadAccountByDeadId" parameterType="String" resultMap="DeadAccountResult">
+        <include refid="selectDeadAccountVo"/>
+        where dead_id = #{deadId}
+    </select>
+
+    <insert id="insertDeadAccount" parameterType="DeadAccount">
+        insert into dead_account
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="deadId != null">dead_id,</if>
+            <if test="accountType != null">account_type,</if>
+            <if test="accountNumber != null">account_number,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="deadTime != null">dead_time,</if>
+            <if test="reason != null">reason,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="deadId != null">#{deadId},</if>
+            <if test="accountType != null">#{accountType},</if>
+            <if test="accountNumber != null">#{accountNumber},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="deadTime != null">#{deadTime},</if>
+            <if test="reason != null">#{reason},</if>
+         </trim>
+    </insert>
+
+    <update id="updateDeadAccount" parameterType="DeadAccount">
+        update dead_account
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="accountType != null">account_type = #{accountType},</if>
+            <if test="accountNumber != null">account_number = #{accountNumber},</if>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="deadTime != null">dead_time = #{deadTime},</if>
+            <if test="reason != null">reason = #{reason},</if>
+        </trim>
+        where dead_id = #{deadId}
+    </update>
+
+    <delete id="deleteDeadAccountByDeadId" parameterType="String">
+        delete from dead_account where dead_id = #{deadId}
+    </delete>
+
+    <delete id="deleteDeadAccountByDeadIds" parameterType="String">
+        delete from dead_account where dead_id in 
+        <foreach item="deadId" collection="array" open="(" separator="," close=")">
+            #{deadId}
+        </foreach>
+    </delete>
+</mapper>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.TaskSendNumMapper">
+    
+    <resultMap type="TaskSendNum" id="TaskSendNumResult">
+        <result property="taskContentId"    column="task_content_id"    />
+        <result property="sendNum"    column="send_num"    />
+    </resultMap>
+
+    <sql id="selectTaskSendNumVo">
+        select task_content_id, send_num from task_send_num
+    </sql>
+
+    <select id="selectTaskSendNumList" parameterType="TaskSendNum" resultMap="TaskSendNumResult">
+        <include refid="selectTaskSendNumVo"/>
+        <where>  
+            <if test="sendNum != null "> and send_num = #{sendNum}</if>
+        </where>
+    </select>
+    
+    <select id="selectTaskSendNumByTaskContentId" parameterType="String" resultMap="TaskSendNumResult">
+        <include refid="selectTaskSendNumVo"/>
+        where task_content_id = #{taskContentId}
+    </select>
+
+    <insert id="insertTaskSendNum" parameterType="TaskSendNum">
+        insert into task_send_num
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="taskContentId != null">task_content_id,</if>
+            <if test="sendNum != null">send_num,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="taskContentId != null">#{taskContentId},</if>
+            <if test="sendNum != null">#{sendNum},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTaskSendNum" parameterType="TaskSendNum">
+        update task_send_num
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="sendNum != null">send_num = #{sendNum},</if>
+        </trim>
+        where task_content_id = #{taskContentId}
+    </update>
+
+    <delete id="deleteTaskSendNumByTaskContentId" parameterType="String">
+        delete from task_send_num where task_content_id = #{taskContentId}
+    </delete>
+
+    <delete id="deleteTaskSendNumByTaskContentIds" parameterType="String">
+        delete from task_send_num where task_content_id in 
+        <foreach item="taskContentId" collection="array" open="(" separator="," close=")">
+            #{taskContentId}
+        </foreach>
+    </delete>
+
+    <select id="selectTaskSendNumListByIds" resultMap="TaskSendNumResult">
+        <include refid="selectTaskSendNumVo"/>
+        <where>
+            <if test="taskIdSet != null and taskIdSet.size() > 0">
+                task_content_id IN
+                <foreach item="taskId" collection="taskIdSet" open="(" separator="," close=")">
+                    #{taskId}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <update id="updateTaskSendNumBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE task_send_num
+            SET is_use = #{item.isUse}
+            WHERE task_content_id = #{item.taskContentId}
+        </foreach>
+    </update>
+
+    <delete id="deleteTaskSendNumByaccountSet">
+        delete from task_send_num where task_content_id in
+        <foreach item="account" collection="accountSet" open="(" separator="," close=")">
+            #{account}
+        </foreach>
+    </delete>
+</mapper>

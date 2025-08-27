@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.GenerateMiddleMapper">
+    
+    <resultMap type="GenerateMiddle" id="GenerateMiddleResult">
+        <result property="id"    column="id"    />
+        <result property="tlId"    column="tl_id"    />
+        <result property="templateName"    column="template_name"    />
+        <result property="sort"    column="sort"    />
+    </resultMap>
+
+    <sql id="selectGenerateMiddleVo">
+        select id, tl_id, template_name,sort from generate_middle
+    </sql>
+
+    <select id="selectGenerateMiddleList" parameterType="GenerateMiddle" resultMap="GenerateMiddleResult">
+        <include refid="selectGenerateMiddleVo"/>
+        <where>  
+            <if test="tlId != null "> and tl_id = #{tlId}</if>
+            <if test="templateName != null  and templateName != ''"> and template_name like concat('%', #{templateName}, '%')</if>
+            <if test="sort != null "> and sort = #{sort}</if>
+        </where>
+        order by sort
+    </select>
+    
+    <select id="selectGenerateMiddleById" parameterType="Long" resultMap="GenerateMiddleResult">
+        <include refid="selectGenerateMiddleVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertGenerateMiddle" parameterType="GenerateMiddle" useGeneratedKeys="true" keyProperty="id">
+        insert into generate_middle
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="tlId != null">tl_id,</if>
+            <if test="sort != null">sort,</if>
+            <if test="templateName != null">template_name,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="tlId != null">#{tlId},</if>
+            <if test="sort != null">#{sort},</if>
+            <if test="templateName != null">#{templateName},</if>
+         </trim>
+    </insert>
+
+    <update id="updateGenerateMiddle" parameterType="GenerateMiddle">
+        update generate_middle
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="tlId != null">tl_id = #{tlId},</if>
+            <if test="sort != null">sort = #{sort},</if>
+            <if test="templateName != null">template_name = #{templateName},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteGenerateMiddleById" parameterType="Long">
+        delete from generate_middle where id = #{id}
+    </delete>
+
+    <delete id="deleteGenerateMiddleByIds" parameterType="String">
+        delete from generate_middle where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <insert id="addBatch"  parameterType="GenerateMiddle" >
+        insert into generate_middle (tl_id,template_name,sort)
+        VALUES
+        <foreach collection="collection" item="item" separator=",">
+            (#{item.tlId},#{item.templateName},#{item.sort})
+        </foreach>
+    </insert>
+</mapper>

@@ -1,0 +1,43 @@
+export default {
+    message: { 
+        search:"Search Contacts",
+        top:"Pin",
+        star:'Favorite',
+        toTopSession:'Pin Chat',
+        toStarSession:'Favorite Chat',
+        cancelTop:'Unpin',
+        cancelStar:'Remove from Favorites',
+        reachMore:"Pull up to load more",
+        pullMore:"Pull down to load more",
+        loading:"Loading....",
+        none:'No more data',
+        personal:"Chat Recors",
+        group:"Mass Message",
+        starSession:"Favorite",
+        fullScreen:"Full Screen",
+        exitFullScreen:"Exit Full Screen",
+        send:"Send",
+        sendInputTip:'Press Enter to send message, Shift+Enter for new line',
+        sendSuccess:"Sent successfully",
+        sendFail:"Failed to send",    
+        noSessionTips:'Please select a chat to start conversation',
+        sendLoading:"Sending...",
+        sessionTitle:"Chat Messages",
+        presetEmpty:"No preset reply messages",
+        pleaseSelSession:"Please select a chat",
+        sendTooFrequent:"Message sending too frequent, please wait {remainingTime} seconds",
+        sendMaxSend:"Message content exceeds {maxSend} character limit",
+        butonTips:{
+            one:'First reply',
+            two:'Second reply', 
+            three:'Third reply',
+            four:'Fourth reply',
+            five:'Fifth reply',
+            six:'Sixth reply'
+        },
+        emojiTip:"Insert Emoji",
+        AiTip:"AI Reply",
+        // AI回复,每点击1、2、3、4、5、6的按钮会自动生成一句不同的回复话术
+        AiTipContent:"When the buttons 1, 2, 3, 4, 5, or 6 are clicked, the AI will automatically generate a different response each time.",
+    }
+}

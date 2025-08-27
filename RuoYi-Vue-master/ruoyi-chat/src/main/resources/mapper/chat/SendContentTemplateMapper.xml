@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.SendContentTemplateMapper">
+    
+    <resultMap type="SendContentTemplate" id="SendContentTemplateResult">
+        <result property="templateId"    column="template_id"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="templateName"    column="template_name"    />
+        <result property="contentId"    column="content_id"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="updateUser"    column="update_user"    />
+        <result property="createUser"    column="create_user"    />
+    </resultMap>
+
+    <sql id="selectSendContentTemplateVo">
+        select template_id, project_id, template_name, content_id, create_time, update_time, update_user, create_user from send_content_template
+    </sql>
+
+    <select id="selectSendContentTemplateList" parameterType="SendContentTemplate" resultMap="SendContentTemplateResult">
+        <include refid="selectSendContentTemplateVo"/>
+        <where>  
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="templateName != null  and templateName != ''"> and template_name like concat('%', #{templateName}, '%')</if>
+            <if test="contentId != null  and contentId != ''"> and content_id = #{contentId}</if>
+            <if test="updateUser != null  and updateUser != ''"> and update_user = #{updateUser}</if>
+            <if test="createUser != null  and createUser != ''"> and create_user = #{createUser}</if>
+        </where>
+    </select>
+    
+    <select id="selectSendContentTemplateByTemplateId" parameterType="String" resultMap="SendContentTemplateResult">
+        <include refid="selectSendContentTemplateVo"/>
+        where template_id = #{templateId}
+    </select>
+
+    <insert id="insertSendContentTemplate" parameterType="SendContentTemplate">
+        insert into send_content_template
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="templateId != null">template_id,</if>
+            <if test="projectId != null and projectId != ''">project_id,</if>
+            <if test="templateName != null and templateName != ''">template_name,</if>
+            <if test="contentId != null">content_id,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="updateUser != null">update_user,</if>
+            <if test="createUser != null">create_user,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="templateId != null">#{templateId},</if>
+            <if test="projectId != null and projectId != ''">#{projectId},</if>
+            <if test="templateName != null and templateName != ''">#{templateName},</if>
+            <if test="contentId != null">#{contentId},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="updateUser != null">#{updateUser},</if>
+            <if test="createUser != null">#{createUser},</if>
+         </trim>
+    </insert>
+
+    <update id="updateSendContentTemplate" parameterType="SendContentTemplate">
+        update send_content_template
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="projectId != null and projectId != ''">project_id = #{projectId},</if>
+            <if test="templateName != null and templateName != ''">template_name = #{templateName},</if>
+            <if test="contentId != null">content_id = #{contentId},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="createUser != null">create_user = #{createUser},</if>
+        </trim>
+        where template_id = #{templateId}
+    </update>
+
+    <delete id="deleteSendContentTemplateByTemplateId" parameterType="String">
+        delete from send_content_template where template_id = #{templateId}
+    </delete>
+
+    <delete id="deleteSendContentTemplateByTemplateIds" parameterType="String">
+        delete from send_content_template where template_id in 
+        <foreach item="templateId" collection="array" open="(" separator="," close=")">
+            #{templateId}
+        </foreach>
+    </delete>
+
+    <update id="resetByTemplateId">
+        update send_content_template_content set is_use = 0 where template_id = #{templateId}
+    </update>
+
+    <delete id="emptyByProject">
+        delete
+        from send_content_template
+        where project_id = #{projectId}
+    </delete>
+
+    <delete id="deleteByTlNameProjectId">
+        delete
+        from send_content_template
+        where template_name = #{templateName} and project_id=#{projectId}
+    </delete>
+</mapper>

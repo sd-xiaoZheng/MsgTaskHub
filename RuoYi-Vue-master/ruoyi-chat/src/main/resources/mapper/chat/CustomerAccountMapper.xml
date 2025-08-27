@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.CustomerAccountMapper">
+    
+    <resultMap type="CustomerAccount" id="CustomerAccountResult">
+        <result property="accountId"    column="account_id"    />
+        <result property="accountType"    column="account_type"    />
+        <result property="accountNumber"    column="account_number"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="accountStatus"    column="account_status"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="assignedId"    column="assigned_id"    />
+        <result property="assignedName"    column="assigned_name"    />
+        <result property="lastSendTime"    column="last_send_time"    />
+        <result property="totalSendCount"    column="total_send_count"    />
+        <result property="totalReplyCount"    column="total_reply_count"    />
+        <result property="uploader"    column="uploader"    />
+    </resultMap>
+
+    <sql id="selectCustomerAccountVo">
+        select account_id, account_type, account_number, project_id, account_status, create_time, update_time, assigned_id, assigned_name, last_send_time, total_send_count, total_reply_count, uploader from customer_account
+    </sql>
+
+    <select id="selectCustomerAccountList" parameterType="CustomerAccount" resultMap="CustomerAccountResult">
+        <include refid="selectCustomerAccountVo"/>
+        <where>  
+            <if test="accountType != null "> and account_type = #{accountType}</if>
+            <if test="accountNumber != null  and accountNumber != ''"> and account_number = #{accountNumber}</if>
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="accountStatus != null "> and account_status = #{accountStatus}</if>
+            <if test="assignedId != null  and assignedId != ''"> and assigned_id = #{assignedId}</if>
+            <if test="assignedName != null  and assignedName != ''"> and assigned_name like concat('%', #{assignedName}, '%')</if>
+            <if test="lastSendTime != null "> and last_send_time = #{lastSendTime}</if>
+            <if test="totalSendCount != null "> and total_send_count = #{totalSendCount}</if>
+            <if test="totalReplyCount != null "> and total_reply_count = #{totalReplyCount}</if>
+            <if test="uploader != null  and uploader != ''"> and uploader like concat('%', #{uploader}, '%')</if>
+        </where>
+    </select>
+    
+    <select id="selectCustomerAccountByAccountId" parameterType="String" resultMap="CustomerAccountResult">
+        <include refid="selectCustomerAccountVo"/>
+        where account_id = #{accountId}
+    </select>
+
+    <insert id="insertCustomerAccount" parameterType="CustomerAccount">
+        insert into customer_account
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="accountId != null">account_id,</if>
+            <if test="accountType != null">account_type,</if>
+            <if test="accountNumber != null">account_number,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="accountStatus != null">account_status,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="assignedId != null">assigned_id,</if>
+            <if test="assignedName != null">assigned_name,</if>
+            <if test="lastSendTime != null">last_send_time,</if>
+            <if test="totalSendCount != null">total_send_count,</if>
+            <if test="totalReplyCount != null">total_reply_count,</if>
+            <if test="uploader != null">uploader,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="accountId != null">#{accountId},</if>
+            <if test="accountType != null">#{accountType},</if>
+            <if test="accountNumber != null">#{accountNumber},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="accountStatus != null">#{accountStatus},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="assignedId != null">#{assignedId},</if>
+            <if test="assignedName != null">#{assignedName},</if>
+            <if test="lastSendTime != null">#{lastSendTime},</if>
+            <if test="totalSendCount != null">#{totalSendCount},</if>
+            <if test="totalReplyCount != null">#{totalReplyCount},</if>
+            <if test="uploader != null">#{uploader},</if>
+         </trim>
+    </insert>
+
+    <update id="updateCustomerAccount" parameterType="CustomerAccount">
+        update customer_account
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="accountType != null">account_type = #{accountType},</if>
+            <if test="accountNumber != null">account_number = #{accountNumber},</if>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="accountStatus != null">account_status = #{accountStatus},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="assignedId != null">assigned_id = #{assignedId},</if>
+            <if test="assignedName != null">assigned_name = #{assignedName},</if>
+            <if test="lastSendTime != null">last_send_time = #{lastSendTime},</if>
+            <if test="totalSendCount != null">total_send_count = #{totalSendCount},</if>
+            <if test="totalReplyCount != null">total_reply_count = #{totalReplyCount},</if>
+            <if test="uploader != null">uploader = #{uploader},</if>
+        </trim>
+        where account_id = #{accountId}
+    </update>
+
+    <delete id="deleteCustomerAccountByAccountId" parameterType="String">
+        delete from customer_account where account_id = #{accountId}
+    </delete>
+
+    <delete id="deleteCustomerAccountByAccountIds" parameterType="String">
+        delete from customer_account where account_id in 
+        <foreach item="accountId" collection="array" open="(" separator="," close=")">
+            #{accountId}
+        </foreach>
+    </delete>
+
+    <insert id="insertCustomerAccountBatch" parameterType="java.util.List">
+        INSERT INTO customer_account (account_id, account_type, account_number, project_id, account_status, assigned_id, assigned_name, last_send_time, total_send_count, total_reply_count, uploader)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.accountId}, #{item.accountType}, #{item.accountNumber}, #{item.projectId}, #{item.accountStatus}, #{item.assignedId}, #{item.assignedName}, #{item.lastSendTime}, #{item.totalSendCount}, #{item.totalReplyCount}, #{item.uploader})
+        </foreach>
+    </insert>
+</mapper>

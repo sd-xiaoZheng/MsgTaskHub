@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.TaskContentMapper">
+
+    <resultMap type="TaskContent" id="TaskContentResult">
+        <result property="taskContentId"    column="task_content_id"    />
+        <result property="taskId"    column="task_id"    />
+        <result property="recipientList"    column="recipient_list"    />
+        <result property="templateId"    column="template_id"    />
+        <result property="taskStatus"    column="task_status"    />
+        <result property="assignedTo"    column="assigned_to"    />
+        <result property="delFlag"    column="del_flag"    />
+        <result property="title"    column="title"    />
+        <result property="isUse"    column="is_use"    />
+    </resultMap>
+
+    <sql id="selectTaskContentVo">
+        select task_content_id, task_id, recipient_list, template_id, task_status, assigned_to,del_flag,title,is_use from task_content
+    </sql>
+
+    <select id="selectTaskContentListPages" parameterType="TaskContent" resultMap="TaskContentResult">
+        <include refid="selectTaskContentVo"/>
+        <where>
+            <if test="taskId != null  and taskId != ''"> and task_id = #{taskId}</if>
+            <if test="recipientList != null  and recipientList != ''"> and recipient_list = #{recipientList}</if>
+            <if test="templateId != null  and templateId != ''"> and template_id = #{templateId}</if>
+            <if test="taskStatus != null"> and task_status = #{taskStatus}</if>
+            <if test="assignedTo != null  and assignedTo != ''"> and assigned_to = #{assignedTo}</if>
+            <if test="title != null  and title != ''"> and title = #{title}</if>
+            <if test="isUse != null"> and is_use = #{isUse}</if>
+            <!--            <if test="delFlag != null"> and del_flag = #{delFlag}</if>-->
+            and del_flag = 0
+        </where>
+        limit 0,20
+    </select>
+
+
+    <select id="selectTaskContentList" parameterType="TaskContent" resultMap="TaskContentResult">
+        <include refid="selectTaskContentVo"/>
+        <where>
+            <if test="taskId != null  and taskId != ''"> and task_id = #{taskId}</if>
+            <if test="recipientList != null  and recipientList != ''"> and recipient_list = #{recipientList}</if>
+            <if test="templateId != null  and templateId != ''"> and template_id = #{templateId}</if>
+            <if test="taskStatus != null"> and task_status = #{taskStatus}</if>
+            <if test="assignedTo != null  and assignedTo != ''"> and assigned_to = #{assignedTo}</if>
+            <if test="title != null  and title != ''"> and title = #{title}</if>
+            <if test="isUse != null"> and is_use = #{isUse}</if>
+<!--            <if test="delFlag != null"> and del_flag = #{delFlag}</if>-->
+            and del_flag = 0
+        </where>
+    </select>
+
+    <select id="selectTaskContentByTaskContentId" parameterType="String" resultMap="TaskContentResult">
+        <include refid="selectTaskContentVo"/>
+        where task_content_id = #{taskContentId}
+    </select>
+
+    <insert id="insertTaskContent" parameterType="TaskContent">
+        insert into task_content
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="taskContentId != null">task_content_id,</if>
+            <if test="taskId != null">task_id,</if>
+            <if test="recipientList != null">recipient_list,</if>
+            <if test="templateId != null">template_id,</if>
+            <if test="taskStatus != null">task_status,</if>
+            <if test="assignedTo != null">assigned_to,</if>
+            <if test="delFlag != null">del_flag,</if>
+            <if test="title != null">title,</if>
+            <if test="isUse != null">is_use,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="taskContentId != null">#{taskContentId},</if>
+            <if test="taskId != null">#{taskId},</if>
+            <if test="recipientList != null">#{recipientList},</if>
+            <if test="templateId != null">#{templateId},</if>
+            <if test="taskStatus != null">#{taskStatus},</if>
+            <if test="assignedTo != null">#{assignedTo},</if>
+            <if test="delFlag != null">#{delFlag},</if>
+            <if test="title != null">#{title},</if>
+            <if test="isUse != null">#{isUse},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTaskContent" parameterType="TaskContent">
+        update task_content
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="taskId != null">task_id = #{taskId},</if>
+            <if test="recipientList != null">recipient_list = #{recipientList},</if>
+            <if test="templateId != null">template_id = #{templateId},</if>
+            <if test="taskStatus != null">task_status = #{taskStatus},</if>
+            <if test="assignedTo != null">assigned_to = #{assignedTo},</if>
+            <if test="delFlag != null">del_flag = #{delFlag},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="isUse != null">is_use = #{isUse},</if>
+        </trim>
+        where task_content_id = #{taskContentId}
+    </update>
+
+    <update id="deleteTaskContentByTaskContentId" parameterType="String">
+        UPDATE task_content
+        SET del_flag = 1
+        WHERE task_content_id = #{taskContentId}
+    </update>
+
+
+    <update id="deleteTaskContentByTaskContentIds" parameterType="String">
+        UPDATE task_content
+        SET del_flag = 1
+        WHERE task_content_id IN
+        <foreach item="taskContentId" collection="array" open="(" separator="," close=")">
+            #{taskContentId}
+        </foreach>
+    </update>
+
+    <insert id="insertTaskContentBatch" parameterType="java.util.List"><!--这里是为了客服导入时，直接使任务开始-->
+        INSERT INTO task_content (task_content_id, task_id, recipient_list, template_id,assigned_to,task_status)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.taskContentId}, #{item.taskId}, #{item.recipientList}, #{item.templateId}, #{item.assignedTo}, #{item.taskStatus})
+        </foreach>
+    </insert>
+
+    <update id="updateTaskContent2assignedToBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE task_content
+            SET assigned_to = #{item.assignedTo},task_status = #{item.taskStatus}
+            WHERE task_content_id = #{item.taskContentId}
+        </foreach>
+    </update>
+
+    <update id="deleteTaskContentByTaskId" parameterType="String">
+        UPDATE task_content
+        SET del_flag = 1
+        WHERE task_id IN
+        <foreach item="taskId" collection="array" open="(" separator="," close=")">
+            #{taskId}
+        </foreach>
+    </update>
+
+    <select id="selectTaskContentListByTaskIdSet" resultMap="TaskContentResult">
+        <include refid="selectTaskContentVo"/>
+        <where>
+            <if test="taskIdSet != null and taskIdSet.size() > 0">
+                task_id IN
+                <foreach item="taskId" collection="taskIdSet" open="(" separator="," close=")">
+                    #{taskId}
+                </foreach>
+            </if>
+            and del_flag = 0
+        </where>
+    </select>
+
+    <update id="updateTaskContent2DeleteBatch">
+        <foreach collection="taskContent" item="item" separator=";">
+            UPDATE task_content
+            SET del_flag = 1
+            WHERE task_content_id = #{item.taskContentId}
+        </foreach>
+    </update>
+
+    <select id="selectDelByTaskId" resultType="com.chat.ruoyichat.domain.TaskContent">
+        <include refid="selectTaskContentVo"/>
+        <where>
+            <if test="taskId != null  and taskId != ''"> and task_id = #{taskId}</if>
+            <if test="recipientList != null  and recipientList != ''"> and recipient_list = #{recipientList}</if>
+            <if test="templateId != null  and templateId != ''"> and template_id = #{templateId}</if>
+            <if test="taskStatus != null"> and task_status = #{taskStatus}</if>
+            <if test="assignedTo != null  and assignedTo != ''"> and assigned_to = #{assignedTo}</if>
+            <if test="title != null  and title != ''"> and title = #{title}</if>
+            <if test="isUse != null"> and is_use = #{isUse}</if>
+            and del_flag = 1
+        </where>
+    </select>
+
+    <update id="updateTaskContentStartToBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE task_content
+            SET task_status = #{item.taskStatus}
+            WHERE task_content_id = #{item.taskContentId} and del_flag = 0 and task_status != 1
+        </foreach>
+    </update>
+
+    <update id="updateTaskContent2UseBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE task_content
+            SET is_use = #{item.isUse}
+            WHERE task_content_id = #{item.taskContentId}
+        </foreach>
+    </update>
+
+    <select id="countTaskContentListByTaskIdSet" resultType="int">
+        select count(1) from task_content
+        <where>
+            <if test="taskIdSet != null and taskIdSet.size() > 0">
+                task_id IN
+                <foreach item="taskId" collection="taskIdSet" open="(" separator="," close=")">
+                    #{taskId}
+                </foreach>
+            </if>
+            and del_flag = 0
+        </where>
+    </select>
+
+    <update id="updateTaskContent4pausedTask">
+        UPDATE task_content
+        SET task_status = 0
+        WHERE task_id = #{taskId} and task_status = 2
+    </update>
+
+    <update id="updateTaskContent4pausedOnesTask">
+        UPDATE task_content
+        SET task_status = 0
+        WHERE task_id = #{taskId} and assigned_to = #{userId} and task_status = 2
+    </update>
+
+    <update id="updateTaskContent4StartTask">
+        UPDATE task_content
+        SET task_status = 2
+        WHERE task_id = #{taskId} and task_status = 0
+    </update>
+
+    <update id="updateTaskContent4StartOnesTask">
+        UPDATE task_content
+        SET task_status = 2
+        WHERE task_id = #{taskId} and assigned_to = #{userId} and task_status = 0
+    </update>
+
+    <select id="selectTaskContentListByLimit" resultMap="TaskContentResult">
+        select task_content_id
+        from task_content
+        where task_id = #{taskId}
+          and del_flag = 0
+        LIMIT #{offset},#{limit}
+    </select>
+
+    <select id="selectCountByTaskId" resultType="int">
+        SELECT count(0) FROM task_content WHERE task_id=#{taskId}
+    </select>
+
+    <select id="countTaskContentListByTaskIdSetAndUserIdSet" resultType="int">
+        select count(1) from task_content
+        <where>
+            <if test="taskIdSet != null and taskIdSet.size() > 0">
+                task_id IN
+                <foreach item="taskId" collection="taskIdSet" open="(" separator="," close=")">
+                    #{taskId}
+                </foreach>
+            </if>
+            <if test="userIdSet != null and userIdSet.size() > 0">
+                and assigned_to IN
+                <foreach item="userId" collection="userIdSet" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
+            and del_flag = 0
+        </where>
+    </select>
+
+<!--    <select id="selectTaskContentList4Export" resultMap="TaskContentResult">-->
+<!--        SELECT tc.*-->
+<!--        FROM task_content tc-->
+<!--        WHERE NOT EXISTS (-->
+<!--        SELECT 1-->
+<!--        FROM session_record sr-->
+<!--        WHERE sr.cust_id = tc.recipient_list-->
+<!--        ) AND is_use = 1 and task_status != 1 and tc.assigned_to IN-->
+<!--        <foreach item="id" collection="userId" open="(" separator="," close=")">-->
+<!--            #{id}-->
+<!--        </foreach>-->
+<!--        ORDER BY assigned_to-->
+<!--    </select>-->
+
+    <select id="selectTaskContentList4Export" resultMap="TaskContentResult">
+        SELECT tc.*
+        FROM task_content tc
+        WHERE tc.assigned_to IN
+        <foreach item="id" collection="userId" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY assigned_to,task_status
+    </select>
+
+    <select id="selectCount" resultType="int">
+        select count(0) from task_content
+        <where>
+            <if test="taskId != null  and taskId != ''"> and task_id = #{taskId}</if>
+            <if test="recipientList != null  and recipientList != ''"> and recipient_list = #{recipientList}</if>
+            <if test="templateId != null  and templateId != ''"> and template_id = #{templateId}</if>
+            <if test="taskStatus != null"> and task_status = #{taskStatus}</if>
+            <if test="assignedTo != null  and assignedTo != ''"> and assigned_to = #{assignedTo}</if>
+            <if test="title != null  and title != ''"> and title = #{title}</if>
+            <if test="isUse != null"> and is_use = #{isUse}</if>
+            <!--            <if test="delFlag != null"> and del_flag = #{delFlag}</if>-->
+            and del_flag = 0
+        </where>
+    </select>
+
+    <delete id="deleteByUserIdSet">
+        DELETE FROM task_content WHERE assigned_to in
+        <foreach item="id" collection="userIdMap" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectTaskContentByCust" resultMap="TaskContentResult">
+        <include refid="selectTaskContentVo"/>
+        where recipient_list = #{contactValue} order by assigned_to desc limit 1
+    </select>
+</mapper>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.ProjectSetMapper">
+    
+    <resultMap type="ProjectSet" id="ProjectSetResult">
+        <result property="setId"    column="set_id"    />
+        <result property="customerRng"    column="customer_rng"    />
+        <result property="leaderSuffix"    column="leader_suffix"    />
+        <result property="accountSendNum"    column="account_send_num"    />
+        <result property="accountControl"    column="account_control"    />
+        <result property="regular"    column="regular"    />
+        <result property="maxSend"    column="max_send"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="sendCd"    column="send_cd"    />
+        <result property="backMsgTime"    column="back_msg_time"    />
+        <result property="gapTime"    column="gap_time"    />
+        <result property="gapLongTime"    column="gap_long_time"    />
+        <result property="gapValue"    column="gap_value"    />
+        <result property="selfTemplate"    column="self_template"    />
+        <result property="isSendNum"    column="is_send_num"    />
+    </resultMap>
+
+    <sql id="selectProjectSetVo">
+        select set_id, customer_rng, leader_suffix,send_cd, account_send_num, account_control, regular, max_send, self_template, project_id, back_msg_time, gap_time, gap_long_time, gap_value, is_send_num from project_set
+    </sql>
+
+    <select id="selectProjectSetList" parameterType="ProjectSet" resultMap="ProjectSetResult">
+        <include refid="selectProjectSetVo"/>
+        <where>  
+            <if test="setId != null "> and set_id = #{setId}</if>
+            <if test="customerRng != null "> and customer_rng = #{customerRng}</if>
+            <if test="leaderSuffix != null  and leaderSuffix != ''"> and leader_suffix = #{leaderSuffix}</if>
+            <if test="accountSendNum != null "> and account_send_num = #{accountSendNum}</if>
+            <if test="accountControl != null "> and account_control = #{accountControl}</if>
+            <if test="regular != null  and regular != ''"> and regular = #{regular}</if>
+            <if test="maxSend != null "> and max_send = #{maxSend}</if>
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="backMsgTime != null"> and back_msg_time = #{backMsgTime}</if>
+            <if test="gapTime != null"> and gap_time = #{gapTime}</if>
+            <if test="gapLongTime != null"> and gap_long_time = #{gapLongTime}</if>
+            <if test="gapValue != null"> and gap_value = #{gapValue}</if>
+            <if test="selfTemplate != null "> and self_template = #{selfTemplate}</if>
+            <if test="isSendNum != null "> and is_send_num = #{isSendNum}</if>
+        </where>
+    </select>
+    
+    <select id="selectProjectSetBySetId" parameterType="Long" resultMap="ProjectSetResult">
+        <include refid="selectProjectSetVo"/>
+        where set_id = #{setId}
+    </select>
+
+    <insert id="insertProjectSet" parameterType="ProjectSet" useGeneratedKeys="true" keyProperty="setId">
+        insert into project_set
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="customerRng != null">customer_rng,</if>
+            <if test="leaderSuffix != null">leader_suffix,</if>
+            <if test="accountSendNum != null">account_send_num,</if>
+            <if test="accountControl != null">account_control,</if>
+            <if test="regular != null">regular,</if>
+            <if test="maxSend != null">max_send,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="backMsgTime != null">back_msg_time,</if>
+            <if test="gapTime != null"> gap_time,</if>
+            <if test="gapLongTime != null"> gap_long_time,</if>
+            <if test="gapValue != null"> gap_value,</if>
+            <if test="selfTemplate != null">self_template,</if>
+            <if test="sendCd != null">send_cd,</if>
+            <if test="isSendNum != null">is_send_num,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="customerRng != null">#{customerRng},</if>
+            <if test="leaderSuffix != null">#{leaderSuffix},</if>
+            <if test="accountSendNum != null">#{accountSendNum},</if>
+            <if test="accountControl != null">#{accountControl},</if>
+            <if test="regular != null">#{regular},</if>
+            <if test="maxSend != null">#{maxSend},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="backMsgTime != null">#{backMsgTime},</if>
+            <if test="gapTime != null">#{gapTime},</if>
+            <if test="gapLongTime != null">#{gapLongTime},</if>
+            <if test="gapValue != null">#{gapValue},</if>
+            <if test="selfTemplate != null">#{selfTemplate},</if>
+            <if test="sendCd != null">#{sendCd},</if>
+            <if test="isSendNum != null">#{isSendNum},</if>
+         </trim>
+    </insert>
+
+    <update id="updateProjectSet" parameterType="ProjectSet">
+        update project_set
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="customerRng != null">customer_rng = #{customerRng},</if>
+            <if test="leaderSuffix != null">leader_suffix = #{leaderSuffix},</if>
+            <if test="accountSendNum != null">account_send_num = #{accountSendNum},</if>
+            <if test="accountControl != null">account_control = #{accountControl},</if>
+            <if test="regular != null">regular = #{regular},</if>
+            <if test="maxSend != null">max_send = #{maxSend},</if>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="backMsgTime != null">back_msg_time = #{backMsgTime},</if>
+            <if test="gapTime != null">gap_time = #{gapTime},</if>
+            <if test="gapLongTime != null">gap_long_time = #{gapLongTime},</if>
+            <if test="gapValue != null">gap_value = #{gapValue},</if>
+            <if test="selfTemplate != null">self_template = #{selfTemplate},</if>
+            <if test="sendCd != null">send_cd = #{sendCd},</if>
+            <if test="isSendNum != null">is_send_num = #{isSendNum},</if>
+        </trim>
+        where set_id = #{setId}
+    </update>
+
+    <delete id="deleteProjectSetBySetId" parameterType="Long">
+        delete from project_set where set_id = #{setId}
+    </delete>
+
+    <delete id="deleteProjectSetBySetIds" parameterType="String">
+        delete from project_set where set_id in 
+        <foreach item="setId" collection="array" open="(" separator="," close=")">
+            #{setId}
+        </foreach>
+    </delete>
+
+    <select id="selectProjectSetByProjectId" resultMap="ProjectSetResult">
+        <include refid="selectProjectSetVo"/>
+        where project_id = #{projectId}
+    </select>
+</mapper>

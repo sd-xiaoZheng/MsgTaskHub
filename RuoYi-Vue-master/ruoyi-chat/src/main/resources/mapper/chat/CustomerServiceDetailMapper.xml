@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.CustomerServiceDetailMapper">
+    <resultMap type="CustomerServiceDetail" id="CustomerServiceDetailResult">
+        <result property="customerId" column="customer_id"/>
+        <result property="projectId" column="project_id"/>
+        <result property="projectName" column="project_name"/>
+        <result property="maxLoad" column="max_load"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="managerId" column="manager_id"/>
+        <result property="sendNum" column="send_num"/>
+        <result property="successNum" column="success_num"/>
+        <result property="status" column="status"/>
+        <result property="isEnough" column="is_enough"/>
+        <result property="banNum" column="ban_num"/>
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="surplusNum" column="surplus_num"/>
+        <result property="replyNum" column="reply_num"/>
+        <result property="version" column="version"/>
+        <collection property="children" resultMap="KefuResult"/>
+    </resultMap>
+
+
+    <resultMap type="CustomerServiceDetail" id="KefuResult">
+        <result property="customerId" column="kefu_id"/>
+        <result property="userId" column="kf_user_id"/>
+        <result property="userName" column="kefu_name"/>
+        <result property="accountNum" column="account_num"/>
+    </resultMap>
+
+    <sql id="selectCustomerServiceDetailVo">
+        select customer_id,
+               csd.project_id,
+               csd.max_load,
+               csd.create_time,
+               csd.update_time,
+               manager_id,
+               send_num,
+               success_num,
+               ban_num,
+               csd.user_id,
+               surplus_num,
+               reply_num,
+               csd.version,
+               su.user_name,
+               p.project_name,
+               su.status,
+               csd.is_enough
+        from customer_service_detail csd
+                 left join sys_user su on su.user_id = csd.user_id
+                 left join project p on p.project_id = csd.project_id
+    </sql>
+
+    <select id="selectCustomerServiceDetailOrder" parameterType="CustomerServiceDetail"
+            resultMap="CustomerServiceDetailResult">
+        <!--        select csd.customer_id, csd.project_id, csd.max_load, csd.create_time, csd.update_time, csd.manager_id, csd.send_num, csd.success_num, csd.ban_num, csd.user_id,csd.surplus_num,csd.reply_num,csd.version,-->
+        <!--               su.user_name,p.project_name,su.status,csd.is_enough,kefu.customer_id kefu_id,kfUser.user_name kefu_name,kfUser.user_id kf_user_id,-->
+        <!--               count(kf_accounts.account_id) account_num-->
+        <!--        from customer_service_detail csd-->
+        <!--                 left join sys_user su on su.user_id = csd.user_id-->
+        <!--                 left join project p on p.project_id = csd.project_id-->
+        <!--            left join customer_service_detail kefu on kefu.manager_id = csd.user_id-->
+        <!--            left join accounts kf_accounts on kf_accounts.assigned_to = kefu.user_id and kf_accounts.acc_status =-1-->
+        <!--            left join sys_user kfUser on kfUser.user_id = kefu.user_id-->
+        <!--        where csd.manager_id = -1-->
+        <!--        group by kefu_id-->
+        SELECT csd.*,COUNT(ac.account_id) as accountNum FROM customer_service_detail as csd
+        LEFT JOIN accounts AS ac ON csd.user_id = ac.assigned_to
+        WHERE csd.user_id = '1743007793079' ORDER BY csd.user_id
+    </select>
+
+    <select id="selectCustomerServiceDetailList" parameterType="CustomerServiceDetail"
+            resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        <where>
+            <if test="userName != null  and userName != ''">
+                and su.user_name like concat('%', #{userName}, '%')
+            </if>
+            <if test="projectId != null  and projectId != ''">
+                and csd.project_id = #{projectId}
+            </if>
+            <if test="managerId != null  and managerId != ''">
+                and csd.manager_id = #{managerId}
+            </if>
+            <if test="userId != null ">
+                and csd.user_id = #{userId}
+            </if>
+            <if test="isEnough != null ">
+                and csd.is_enough = #{isEnough}
+            </if>
+            <if test="version != null ">
+                and csd.version = #{version}
+            </if>
+            <if test="status != null ">
+                and su.status = #{status}
+            </if>
+            and customer_status != -1
+        </where>
+        order by csd.user_id
+    </select>
+
+    <select id="selectCustomerServiceDetailByCustomerId" parameterType="String" resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        where csd.customer_id = #{customerId} and customer_status != -1
+    </select>
+
+    <insert id="insertCustomerServiceDetail" parameterType="CustomerServiceDetail">
+        insert into customer_service_detail
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="customerId != null">
+                customer_id,
+            </if>
+            <if test="isEnough != null">
+                is_enough,
+            </if>
+            <if test="projectId != null">
+                project_id,
+            </if>
+            <if test="maxLoad != null">
+                max_load,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="updateTime != null">
+                update_time,
+            </if>
+            <if test="managerId != null">
+                manager_id,
+            </if>
+            <if test="sendNum != null">
+                send_num,
+            </if>
+            <if test="successNum != null">
+                success_num,
+            </if>
+            <if test="banNum != null">
+                ban_num,
+            </if>
+            <if test="userId != null">
+                user_id,
+            </if>
+            <if test="surplusNum != null">
+                surplus_num,
+            </if>
+            <if test="replyNum != null">
+                reply_num,
+            </if>
+            <if test="version != null">
+                version,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="customerId != null">
+                #{customerId},
+            </if>
+            <if test="isEnough != null">
+                #{isEnough},
+            </if>
+            <if test="projectId != null">
+                #{projectId},
+            </if>
+            <if test="maxLoad != null">
+                #{maxLoad},
+            </if>
+            <if test="createTime != null">
+                #{createTime},
+            </if>
+            <if test="updateTime != null">
+                #{updateTime},
+            </if>
+            <if test="managerId != null">
+                #{managerId},
+            </if>
+            <if test="sendNum != null">
+                #{sendNum},
+            </if>
+            <if test="successNum != null">
+                #{successNum},
+            </if>
+            <if test="banNum != null">
+                #{banNum},
+            </if>
+            <if test="userId != null">
+                #{userId},
+            </if>
+            <if test="surplusNum != null">
+                #{surplusNum},
+            </if>
+            <if test="replyNum != null">
+                #{replyNum},
+            </if>
+            <if test="version != null">
+                #{version},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateCustomerServiceDetail" parameterType="CustomerServiceDetail">
+        update customer_service_detail
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="projectId != null">
+                project_id = #{projectId},
+            </if>
+            <if test="isEnough != null">
+                is_enough = #{isEnough},
+            </if>
+            <if test="maxLoad != null">
+                max_load = #{maxLoad},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+            <if test="managerId != null">
+                manager_id = #{managerId},
+            </if>
+            <if test="sendNum != null">
+                send_num = #{sendNum},
+            </if>
+            <if test="successNum != null">
+                success_num = #{successNum},
+            </if>
+            <if test="banNum != null">
+                ban_num = #{banNum},
+            </if>
+            <if test="userId != null">
+                user_id = #{userId},
+            </if>
+            <if test="surplusNum != null">
+                surplus_num = #{surplusNum},
+            </if>
+            <if test="replyNum != null">
+                reply_num = #{replyNum},
+            </if>
+            <if test="version != null">
+                version = #{version} + 1,
+            </if>
+        </trim>
+        where 1=1
+        <if test="customerId != null">
+            AND customer_id = #{customerId}
+        </if>
+        <if test="version != null">
+            AND version = #{version}
+        </if>
+    </update>
+
+    <delete id="deleteCustomerServiceDetailByCustomerId" parameterType="String">
+        delete
+        from customer_service_detail
+        where customer_id = #{customerId}
+    </delete>
+
+    <delete id="deleteCustomerServiceDetailByuserIds" parameterType="String">
+        <!--        delete from customer_service_detail where customer_id in -->
+        <!--        <foreach item="customerId" collection="array" open="(" separator="," close=")">-->
+        <!--            #{customerId}-->
+        <!--        </foreach>-->
+
+
+        <!-- 删除 customer_service_detail 表的数据 -->
+        <!--        delete from customer_service_detail where user_id in-->
+        <!--        <foreach item="customerId" collection="array" open="(" separator="," close=")">-->
+        <!--            #{customerId}-->
+        <!--        </foreach>;-->
+        <!--        &lt;!&ndash; 删除 user 表的数据 &ndash;&gt;-->
+        <!--        delete from sys_user where user_id in-->
+        <!--        <foreach item="customerId" collection="array" open="(" separator="," close=")">-->
+        <!--            #{customerId}-->
+        <!--        </foreach>;-->
+
+        update customer_service_detail set customer_status = -1 where user_id in
+        <foreach item="customerId" collection="array" open="(" separator="," close=")">
+            #{customerId}
+        </foreach>;
+        <!-- 假删除 user 表的数据 -->
+        update sys_user set del_flag = '2' where user_id in
+        <foreach item="customerId" collection="array" open="(" separator="," close=")">
+            #{customerId}
+        </foreach>;
+    </delete>
+
+    <select id="selectCustomerDetailByUserId" parameterType="Long" resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        where csd.user_id = #{userId} and customer_status != -1
+    </select>
+
+    <update id="updateCustomerServiceDetail2SurplusNumBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE customer_service_detail
+            SET surplus_num = #{item.surplusNum}
+            WHERE #{item.surplusNum} &lt;= #{item.maxLoad} and customer_id = #{item.customerId}
+        </foreach>
+    </update>
+
+    <update id="updateCustomerServiceDetail2MaxLoadBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE customer_service_detail
+            SET max_load = #{item.maxLoad}
+            WHERE customer_id = #{item.customerId}
+        </foreach>
+    </update>
+
+    <select id="selectCustomerDetailByUserIdList" resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        where
+        csd.user_id IN
+        <foreach item="id" collection="collection" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and customer_status != -1
+    </select>
+
+    <select id="selectCustomerDetailByManagerId" resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        where
+        manager_id = #{managerId} and customer_status != -1
+        order by csd.user_id
+    </select>
+
+    <insert id="insertCustomerServiceDetailBatch" parameterType="java.util.List">
+        insert into customer_service_detail (customer_id,manager_id,project_id, max_load,
+        send_num,success_num,ban_num,user_id,is_enough)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.customerId},#{item.managerId}, #{item.projectId}, #{item.maxLoad},
+            #{item.sendNum},#{item.successNum},#{item.banNum},#{item.userId},#{item.isEnough})
+        </foreach>
+    </insert>
+
+    <select id="selectCustomerServiceDetailList4getCustomerInfo" resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        where
+        manager_id > 0 and customer_status != -1 and customer_status != 1
+    </select>
+
+    <select id="selectCustomerServiceDetailByCustomerIds" resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        where
+        csd.customer_id IN
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and customer_status != -1
+    </select>
+
+    <update id="updateCustomerServiceemptyAccount">
+        UPDATE customer_service_detail
+        SET is_enough = 0
+        WHERE project_id = #{projectId}
+    </update>
+
+    <select id="selectCustomerDetailByUserIdAndManager" resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        where
+        csd.user_id IN
+        <foreach item="id" collection="collection" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and manager_id = -1
+    </select>
+
+    <select id="selectCustomerDetailByManagerIdSet" resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        where
+        csd.manager_id IN
+        <foreach item="id" collection="collection" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="updateCustomerServiceDetail2ReplyNumKeyBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE customer_service_detail
+            SET reply_num = #{item.replyNum} + reply_num
+            WHERE user_id = #{item.userId}
+        </foreach>
+    </update>
+
+    <update id="updateCustomerServiceDetail2SuccessNumKeyBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE customer_service_detail
+            SET success_num = #{item.successNum} + success_num
+            WHERE user_id = #{item.userId}
+        </foreach>
+    </update>
+
+    <update id="updateCustomerServiceDetail2SendNumKeyBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE customer_service_detail
+            SET send_num = #{item.sendNum} + send_num
+            WHERE user_id = #{item.userId}
+        </foreach>
+    </update>
+
+    <update id="updateCustomerServiceDetailAddBanNum">
+        UPDATE customer_service_detail
+        SET ban_num =  ban_num + 1
+        WHERE user_id = #{assignedTo}
+    </update>
+
+    <update id="updateSurplusNumByCustomerId" parameterType="CustomerServiceDetail">
+        update customer_service_detail
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="projectId != null">
+                project_id = #{projectId},
+            </if>
+            <if test="isEnough != null">
+                is_enough = #{isEnough},
+            </if>
+            <if test="maxLoad != null">
+                max_load = #{maxLoad},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+            <if test="managerId != null">
+                manager_id = #{managerId},
+            </if>
+            <if test="sendNum != null">
+                send_num = #{sendNum},
+            </if>
+            <if test="successNum != null">
+                success_num = #{successNum},
+            </if>
+            <if test="banNum != null">
+                ban_num = #{banNum},
+            </if>
+            <if test="userId != null">
+                user_id = #{userId},
+            </if>
+            <if test="surplusNum != null">
+                surplus_num = #{surplusNum},
+            </if>
+            <if test="replyNum != null">
+                reply_num = #{replyNum},
+            </if>
+            <if test="version != null">
+                version = #{version} + 1,
+            </if>
+        </trim>
+        where #{surplusNum} &lt;= #{maxLoad}
+        <if test="customerId != null">
+            AND customer_id = #{customerId}
+        </if>
+        <if test="version != null">
+            AND version = #{version}
+        </if>
+    </update>
+
+    <select id="selectCustomerDetailByUserIdListNoStatus" resultMap="CustomerServiceDetailResult">
+        <include refid="selectCustomerServiceDetailVo"/>
+        where
+        csd.user_id IN
+        <foreach item="id" collection="collection" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <delete id="deleteSysAll">
+        START TRANSACTION;
+        TRUNCATE TABLE task_send_num;
+        TRUNCATE TABLE task_content;
+        TRUNCATE TABLE task;
+        TRUNCATE TABLE session_record;
+        TRUNCATE TABLE send_content_template;
+        TRUNCATE TABLE send_content_template_content;
+        TRUNCATE TABLE preset_reply;
+        TRUNCATE TABLE customer_account;
+        TRUNCATE TABLE chat_record;
+        TRUNCATE TABLE accounts;
+        delete from sys_user where user_id>1742310758316;
+        delete from sys_user_role where user_id>1742310758316;
+        delete from customer_service_detail where user_id>1742310758316;
+        COMMIT;
+    </delete>
+
+    <update id="updateCustomerServiceDetailSub">
+        update customer_service_detail
+        set surplus_num=surplus_num + 1
+        where user_id = #{userId}
+    </update>
+</mapper>

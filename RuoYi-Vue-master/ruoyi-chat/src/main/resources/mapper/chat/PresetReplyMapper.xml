@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.PresetReplyMapper">
+    
+    <resultMap type="PresetReply" id="PresetReplyResult">
+        <result property="replyId"    column="reply_id"    />
+        <result property="replyWeight"    column="reply_weight"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="replyContent"    column="reply_content"    />
+        <result property="usageCount"    column="usage_count"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="updateUser"    column="update_user"    />
+        <result property="createUser"    column="create_user"    />
+        <result property="replyTitle"    column="reply_title"    />
+    </resultMap>
+
+    <sql id="selectPresetReplyVo">
+        select reply_id, reply_weight, project_id, reply_content, usage_count, create_time, update_time, update_user, create_user,reply_title from preset_reply
+    </sql>
+
+    <select id="selectPresetReplyList" parameterType="PresetReply" resultMap="PresetReplyResult">
+        <include refid="selectPresetReplyVo"/>
+        <where>  
+            <if test="replyWeight != null "> and reply_weight = #{replyWeight}</if>
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="replyContent != null  and replyContent != ''"> and reply_content = #{replyContent}</if>
+            <if test="usageCount != null "> and usage_count = #{usageCount}</if>
+            <if test="updateUser != null  and updateUser != ''"> and update_user = #{updateUser}</if>
+            <if test="createUser != null  and createUser != ''"> and create_user = #{createUser}</if>
+            <if test="replyTitle != null  and replyTitle != ''"> and reply_title = #{replyTitle}</if>
+        </where>
+    </select>
+    
+    <select id="selectPresetReplyByReplyId" parameterType="String" resultMap="PresetReplyResult">
+        <include refid="selectPresetReplyVo"/>
+        where reply_id = #{replyId}
+    </select>
+
+    <insert id="insertPresetReply" parameterType="PresetReply">
+        insert into preset_reply
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="replyId != null">reply_id,</if>
+            <if test="replyWeight != null">reply_weight,</if>
+            <if test="projectId != null and projectId != ''">project_id,</if>
+            <if test="replyContent != null and replyContent != ''">reply_content,</if>
+            <if test="usageCount != null">usage_count,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="updateUser != null">update_user,</if>
+            <if test="createUser != null">create_user,</if>
+            <if test="replyTitle != null">reply_title,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="replyId != null">#{replyId},</if>
+            <if test="replyWeight != null">#{replyWeight},</if>
+            <if test="projectId != null and projectId != ''">#{projectId},</if>
+            <if test="replyContent != null and replyContent != ''">#{replyContent},</if>
+            <if test="usageCount != null">#{usageCount},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="updateUser != null">#{updateUser},</if>
+            <if test="createUser != null">#{createUser},</if>
+            <if test="replyTitle != null">#{replyTitle},</if>
+         </trim>
+    </insert>
+
+    <update id="updatePresetReply" parameterType="PresetReply">
+        update preset_reply
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="replyWeight != null">reply_weight = #{replyWeight},</if>
+            <if test="projectId != null and projectId != ''">project_id = #{projectId},</if>
+            <if test="replyContent != null and replyContent != ''">reply_content = #{replyContent},</if>
+            <if test="usageCount != null">usage_count = #{usageCount},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="updateUser != null">update_user = #{updateUser},</if>
+            <if test="createUser != null">create_user = #{createUser},</if>
+            <if test="replyTitle != null">reply_title = #{replyTitle},</if>
+        </trim>
+        where reply_id = #{replyId}
+    </update>
+
+    <delete id="deletePresetReplyByReplyId" parameterType="String">
+        delete from preset_reply where reply_id = #{replyId}
+    </delete>
+
+    <delete id="deletePresetReplyByReplyIds" parameterType="String">
+        delete from preset_reply where reply_id in 
+        <foreach item="replyId" collection="array" open="(" separator="," close=")">
+            #{replyId}
+        </foreach>
+    </delete>
+
+    <insert id="insertPresetReplyBath" parameterType="java.util.List">
+        INSERT INTO preset_reply (reply_id, reply_weight, project_id, reply_content, create_time, create_user,reply_title)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.replyId}, #{item.replyWeight}, #{item.projectId}, #{item.replyContent}, sysdate(), #{item.createBy}, #{item.replyTitle})
+        </foreach>
+    </insert>
+
+    <select id="randomText" resultMap="PresetReplyResult">
+        <include refid="selectPresetReplyVo"/>
+        WHERE project_id = #{projectId} and reply_weight = #{replyWeight}
+        ORDER BY RAND()
+        LIMIT 1;
+    </select>
+
+    <delete id="emptyByProject">
+        delete
+        from preset_reply
+        where project_id = #{projectId}
+    </delete>
+
+    <select id="selectCountByreplyWeight" resultType="com.chat.ruoyichat.domain.dto.ReplyNum">
+        SELECT reply_weight as replyWeight,COUNT(*) AS num FROM preset_reply where project_id = #{projectId} GROUP BY reply_weight order by replyWeight
+    </select>
+
+    <delete id="deletePresetReplyByReply">
+        delete
+        from preset_reply
+        where project_id = #{projectId} and reply_weight = #{replyWeight}
+    </delete>
+</mapper>

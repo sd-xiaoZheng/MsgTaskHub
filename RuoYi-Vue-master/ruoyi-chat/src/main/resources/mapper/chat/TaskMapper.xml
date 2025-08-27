@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.TaskMapper">
+    
+    <resultMap type="Task" id="TaskResult">
+        <result property="taskId"    column="task_id"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="taskType"    column="task_type"    />
+        <result property="taskStatus"    column="task_status"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="startTime"    column="start_time"    />
+        <result property="endTime"    column="end_time"    />
+        <result property="groupId"    column="group_id"    />
+        <result property="taskName"    column="task_name"    />
+        <result property="taskNum"    column="task_num"    />
+    </resultMap>
+
+    <sql id="selectTaskVo">
+        select task_id, project_id, task_type, task_status, create_time, start_time, end_time,group_id, task_name,task_num from task
+    </sql>
+
+    <select id="selectTaskList" parameterType="Task" resultMap="TaskResult">
+        <include refid="selectTaskVo"/>
+        <where>  
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="taskType != null "> and task_type = #{taskType}</if>
+            <if test="taskStatus != null "> and task_status = #{taskStatus}</if>
+            <if test="taskNum != null "> and task_num = #{taskNum}</if>
+            <if test="startTime != null "> and start_time = #{startTime}</if>
+            <if test="endTime != null "> and end_time = #{endTime}</if>
+            <if test="groupId != null "> and group_id = #{groupId}</if>
+            <if test="taskName != null  and taskName != ''"> and task_name = #{taskName}</if>
+            and del_flag = 0
+        </where>
+    </select>
+    
+    <select id="selectTaskByTaskId" parameterType="String" resultMap="TaskResult">
+        <include refid="selectTaskVo"/>
+        where task_id = #{taskId} and del_flag = 0
+    </select>
+
+    <insert id="insertTask" parameterType="Task">
+        insert into task
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="taskId != null">task_id,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="taskType != null">task_type,</if>
+            <if test="taskStatus != null">task_status,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="startTime != null">start_time,</if>
+            <if test="endTime != null">end_time,</if>
+            <if test="taskName != null">task_name,</if>
+            <if test="taskNum != null">task_num,</if>
+            <if test="groupId != null">group_id,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="taskId != null">#{taskId},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="taskType != null">#{taskType},</if>
+            <if test="taskStatus != null">#{taskStatus},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="startTime != null">#{startTime},</if>
+            <if test="endTime != null">#{endTime},</if>
+            <if test="taskName != null">#{taskName},</if>
+            <if test="taskNum != null">#{taskNum},</if>
+            <if test="groupId != null">#{groupId},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTask" parameterType="Task">
+        update task
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="taskType != null">task_type = #{taskType},</if>
+            <if test="taskStatus != null">task_status = #{taskStatus},</if>
+            <if test="createTime != null">create_time = #{createTime},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="taskName != null">task_name = #{taskName},</if>
+            <if test="taskNum != null">task_num = #{taskNum},</if>
+            <if test="groupId != null">group_id = #{groupId},</if>
+        </trim>
+        where task_id = #{taskId}
+    </update>
+
+    <update id="deleteTaskByTaskId" parameterType="String">
+        UPDATE task
+        SET del_flag = 1
+        WHERE task_id = #{taskId}
+    </update>
+
+    <update id="deleteTaskByTaskIds" parameterType="String">
+        UPDATE task
+        SET del_flag = 1
+        WHERE task_id IN
+        <foreach item="taskId" collection="array" open="(" separator="," close=")">
+            #{taskId}
+        </foreach>
+    </update>
+
+    <select id="selectTaskListByTaskIds" parameterType="java.util.Collection" resultMap="TaskResult">
+        <include refid="selectTaskVo"/>
+        <where>
+            <if test="collection != null and collection.size() > 0">
+                task_id IN
+                <foreach item="taskId" collection="collection" open="(" separator="," close=")">
+                    #{taskId}
+                </foreach>
+            </if>
+            and del_flag = 0
+        </where>
+    </select>
+
+    <select id="selectByEndTimeLess3Min" parameterType="Task" resultMap="TaskResult">
+        SELECT *
+        FROM task
+        WHERE task_status = 2
+          AND end_time > DATE_SUB(NOW(), INTERVAL 3 MINUTE)
+    </select>
+
+    <update id="updateTask2Start">
+        UPDATE task
+        SET task_status = 1
+        WHERE task_id IN
+        <foreach item="taskId" collection="collection" open="(" separator="," close=")">
+            #{taskId}
+        </foreach>
+    </update>
+
+    <delete id="deleteTaskByUserIdSet">
+        UPDATE task
+        SET del_flag = 1
+        WHERE task_type IN
+        <foreach item="taskId" collection="userIdMap" open="(" separator="," close=")">
+            #{taskId}
+        </foreach>
+    </delete>
+</mapper>

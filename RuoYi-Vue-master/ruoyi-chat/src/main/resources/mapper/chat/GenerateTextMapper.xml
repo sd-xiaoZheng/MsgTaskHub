@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.GenerateTextMapper">
+    <resultMap type="GenerateText" id="GenerateTextResult">
+        <result property="id" column="id"/>
+        <result property="tlmId" column="tlm_id"/>
+        <result property="content" column="content"/>
+    </resultMap>
+    <resultMap type="NameCount" id="NameCountResult">
+        <result property="name" column="name"/>
+        <result property="count" column="count"/>
+    </resultMap>
+
+
+    <sql id="selectGenerateTextVo">
+        select id, tlm_id, content
+        from generate_text
+    </sql>
+
+    <select id="selectGenerateTextList" parameterType="GenerateText" resultMap="GenerateTextResult">
+        <include refid="selectGenerateTextVo"/>
+        <where>
+            <if test="tlmId != null ">
+                and tlm_id = #{tlmId}
+            </if>
+            <if test="content != null  and content != ''">
+                and content = #{content}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectGenerateTextById" parameterType="Long" resultMap="GenerateTextResult">
+        <include refid="selectGenerateTextVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertGenerateText" parameterType="GenerateText" useGeneratedKeys="true" keyProperty="id">
+        insert into generate_text
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="tlmId != null">
+                tlm_id,
+            </if>
+            <if test="content != null">
+                content,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="tlmId != null">
+                #{tlmId},
+            </if>
+            <if test="content != null">
+                #{content},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateGenerateText" parameterType="GenerateText">
+        update generate_text
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="tlmId != null">
+                tlm_id = #{tlmId},
+            </if>
+            <if test="content != null">
+                content = #{content},
+            </if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteGenerateTextById" parameterType="Long">
+        delete
+        from generate_text
+        where id = #{id}
+    </delete>
+
+    <delete id="deleteGenerateTextByIds" parameterType="String">
+        delete from generate_text where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <insert id="addBatch">
+        insert into generate_text (tlm_id,content)
+        VALUES
+        <foreach collection="collection" item="item" separator=",">
+            (#{item.tlmId},#{item.content})
+        </foreach>
+    </insert>
+
+    <delete id="deleteGenerateTextByMiddleId">
+        delete from generate_text where tlm_id = #{tlmId}
+    </delete>
+
+    <select id="selectGenerateMiddleByTlmIdSet" resultMap="NameCountResult">
+        select tlm_id as name ,count(*) as count from generate_text where tlm_id in
+        <foreach item="id" collection="collection" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        group by tlm_id
+    </select>
+</mapper>

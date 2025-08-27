@@ -1,0 +1,17 @@
+${AnsiColor.CYAN}
+  ╭────────────────────────────────────────╮
+  │ 夜猫子 ${AnsiColor.MAGENTA}✦               │
+  │ ${AnsiBackground.BLUE}${AnsiColor.BRIGHT_WHITE} 启动中... ${AnsiBackground.DEFAULT}${AnsiColor.CYAN}             │
+  ╘════════════════════════════════════════╛
+  ${AnsiColor.BRIGHT_BLUE}
+  __________
+ / ___  ___ \
+/ / @ \/ @ \ \
+\ \___/\___/ /\
+ \____\/____/||
+ /     /\\\\\//
+|     |\\\\\\
+ \      \\\\\\
+   \______/\\\\
+    _||_||_
+${AnsiColor.DEFAULT}

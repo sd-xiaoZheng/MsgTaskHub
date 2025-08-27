@@ -1,0 +1,570 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.AccountsMapper">
+    <resultMap type="Accounts" id="AccountsResult">
+        <result property="accountId" column="account_id"/>
+        <result property="account" column="account"/>
+        <result property="Cookie" column="Cookie"/>
+        <result property="deviceInfo" column="deviceInfo"/>
+        <result property="userName" column="userName"/>
+        <result property="country" column="country"/>
+        <result property="password" column="password"/>
+        <result property="accStatus" column="acc_status"/>
+        <result property="assignedTo" column="assigned_to"/>
+        <result property="assignedToName" column="assigned_to_name"/>
+        <result property="projectId" column="project_id"/>
+        <result property="delFlag" column="del_flag"/>
+        <result property="createTime" column="create_time"/>
+        <result property="upUser" column="up_user"/>
+        <result property="startTime" column="start_time"/>
+        <result property="banTime" column="ban_time"/>
+        <result property="reason" column="reason"/>
+    </resultMap>
+
+    <sql id="selectAccountsVo">
+        select accounts.account_id,
+               accounts.create_time,
+               accounts.account,
+               accounts.Cookie,
+               accounts.deviceInfo,
+               accounts.userName,
+               accounts.country,
+               accounts.password,
+               accounts.acc_status,
+               accounts.assigned_to,
+               accounts.project_id,
+               accounts.del_flag,
+               accounts.up_user,
+               accounts.start_time,
+               accounts.ban_time,
+               accounts.reason,
+               su.user_name assigned_to_name
+        from accounts
+                 left join sys_user su on accounts.assigned_to = su.user_id
+    </sql>
+
+    <select id="selectAccountsList" parameterType="Accounts" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        <where>
+            <if test="accountId != null ">
+                and accounts.account_id = #{accountId}
+            </if>
+            <if test="assignedToName != null and assignedToName != ''">
+                and su.user_name like concat('%', #{assignedToName}, '%')
+            </if>
+            <if test="account != null  and account != ''">
+                and accounts.account = #{account}
+            </if>
+            <if test="Cookie != null  and Cookie != ''">
+                and accounts.Cookie = #{Cookie}
+            </if>
+            <if test="deviceInfo != null  and deviceInfo != ''">
+                and accounts.deviceInfo = #{deviceInfo}
+            </if>
+            <if test="userName != null  and userName != ''">
+                and accounts.userName like concat('%', #{userName}, '%')
+            </if>
+            <if test="country != null  and country != ''">
+                and accounts.country = #{country}
+            </if>
+            <if test="password != null  and password != ''">
+                and accounts.password = #{password}
+            </if>
+            <if test="accStatus != null ">
+                and accounts.acc_status = #{accStatus}
+            </if>
+            <if test="assignedTo != null ">
+                and accounts.assigned_to = #{assignedTo}
+            </if>
+            <if test="projectId != null  and projectId != ''">
+                and accounts.project_id = #{projectId}
+            </if>
+            <if test="upUser != null  and upUser != ''">
+                and accounts.up_user = #{upUser}
+            </if>
+            <if test="startTime != null">
+                and accounts.start_time = #{startTime}
+            </if>
+            <if test="banTime != null">
+                and accounts.ban_time = #{banTime}
+            </if>
+            <if test="reason != null  and reason != ''">
+                and accounts.reason = #{reason}
+            </if>
+            and accounts.del_flag=0
+        </where>
+        order by accounts.acc_status desc
+    </select>
+
+    <select id="selectAccountsRecycleList" parameterType="Accounts" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        <where>
+            <if test="accountId != null ">
+                and accounts.account_id = #{accountId}
+            </if>
+            <if test="account != null  and account != ''">
+                and accounts.account = #{account}
+            </if>
+            <if test="Cookie != null  and Cookie != ''">
+                and accounts.Cookie = #{Cookie}
+            </if>
+            <if test="deviceInfo != null  and deviceInfo != ''">
+                and accounts.deviceInfo = #{deviceInfo}
+            </if>
+            <if test="userName != null  and userName != ''">
+                and accounts.userName like concat('%', #{userName}, '%')
+            </if>
+            <if test="country != null  and country != ''">
+                and accounts.country = #{country}
+            </if>
+            <if test="password != null  and password != ''">
+                and accounts.password = #{password}
+            </if>
+            <if test="accStatus != null ">
+                and accounts.acc_status = #{accStatus}
+            </if>
+            <if test="assignedTo != null ">
+                and accounts.assigned_to = #{assignedTo}
+            </if>
+            <if test="assignedToName != null ">
+                and su.user_name like concat('%', #{assignedToName}, '%')
+            </if>
+
+            <if test="projectId != null  and projectId != ''">
+                and accounts.project_id = #{projectId}
+            </if>
+            <if test="upUser != null  and upUser != ''">
+                and accounts.up_user = #{upUser}
+            </if>
+            <if test="createTime != null">
+                and accounts.create_time = #{createTime}
+            </if>
+
+            <if test="startTime != null">
+                and accounts.create_time &gt; #{startTime}
+            </if>
+            <if test="endTime != null">
+                and accounts.create_time &lt; #{endTime}
+            </if>
+
+            <if test="banTime != null">
+                and accounts.ban_time = #{banTime}
+            </if>
+            <if test="reason != null  and reason != ''">
+                and accounts.reason = #{reason}
+            </if>
+            and accounts.del_flag=1
+        </where>
+    </select>
+
+    <select id="selectAccountsByAccountId" parameterType="Long" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        where accounts.account_id = #{accountId}
+    </select>
+
+    <insert id="insertAccounts" parameterType="Accounts" useGeneratedKeys="true" keyProperty="accountId">
+        insert into accounts
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="account != null and account != ''">
+                account,
+            </if>
+            <if test="Cookie != null">
+                Cookie,
+            </if>
+            <if test="deviceInfo != null">
+                deviceInfo,
+            </if>
+            <if test="userName != null">
+                userName,
+            </if>
+            <if test="country != null">
+                country,
+            </if>
+            <if test="password != null">
+                password,
+            </if>
+            <if test="accStatus != null">
+                acc_status,
+            </if>
+            <if test="assignedTo != null">
+                assigned_to,
+            </if>
+            <if test="projectId != null">
+                project_id,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="upUser != null">
+                up_user,
+            </if>
+            <if test="startTime != null">
+                start_time,
+            </if>
+            <if test="banTime != null">
+                ban_time,
+            </if>
+            <if test="reason != null">
+                reason,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="account != null and account != ''">
+                #{account},
+            </if>
+            <if test="Cookie != null">
+                #{Cookie},
+            </if>
+            <if test="deviceInfo != null">
+                #{deviceInfo},
+            </if>
+            <if test="userName != null">
+                #{userName},
+            </if>
+            <if test="country != null">
+                #{country},
+            </if>
+            <if test="password != null">
+                #{password},
+            </if>
+            <if test="accStatus != null">
+                #{accStatus},
+            </if>
+            <if test="assignedTo != null">
+                #{assignedTo},
+            </if>
+            <if test="projectId != null">
+                #{projectId},
+            </if>
+            <if test="createTime != null">
+                #{createTime},
+            </if>
+            <if test="upUser != null">
+                #{upUser},
+            </if>
+            <if test="startTime != null">
+                #{startTime},
+            </if>
+            <if test="reason != null">
+                #{reason},
+            </if>
+        </trim>
+    </insert>
+
+    <update id="updateAccounts" parameterType="Accounts">
+        update accounts
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="account != null and account != ''">
+                account = #{account},
+            </if>
+            <if test="Cookie != null">
+                Cookie = #{Cookie},
+            </if>
+            <if test="deviceInfo != null">
+                deviceInfo = #{deviceInfo},
+            </if>
+            <if test="userName != null">
+                userName = #{userName},
+            </if>
+            <if test="country != null">
+                country = #{country},
+            </if>
+            <if test="password != null">
+                password = #{password},
+            </if>
+            <if test="accStatus != null">
+                acc_status = #{accStatus},
+            </if>
+            <if test="assignedTo != null">
+                assigned_to = #{assignedTo},
+            </if>
+            <if test="projectId != null">
+                project_id = #{projectId},
+            </if>
+            <if test="delFlag != null">
+                del_flag = #{delFlag},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime},
+            </if>
+            <if test="upUser != null">
+                up_user = #{upUser},
+            </if>
+            <if test="startTime != null">
+                start_time = #{startTime},
+            </if>
+            <if test="banTime != null">
+                ban_time = #{banTime},
+            </if>
+            <if test="reason != null">
+                reason = #{reason},
+            </if>
+        </trim>
+        where account_id = #{accountId}
+    </update>
+
+    <update id="deleteAccountsByAccountId" parameterType="Long">
+        update accounts
+        set del_flag = 1
+        where account_id = #{accountId}
+    </update>
+
+    <update id="deleteAccountsByAccountIds" parameterType="String">
+        update accounts
+        set del_flag = 1
+        where account_id in
+        <foreach item="accountId" collection="array" open="(" separator="," close=")">
+            #{accountId}
+        </foreach>
+    </update>
+
+    <delete id="deleteAccountsByAccountIdsReal" parameterType="String">
+        delete from accounts where account_id in
+        <foreach item="accountId" collection="array" open="(" separator="," close=")">
+            #{accountId}
+        </foreach>
+    </delete>
+
+    <insert id="insertImportBatch" useGeneratedKeys="true" keyProperty="accountId">
+        INSERT IGNORE INTO accounts (account, Cookie, deviceInfo, userName,country, password, project_id,create_time,up_user)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.account}, #{item.Cookie}, #{item.deviceInfo}, #{item.userName}, #{item.country}, #{item.password},
+            #{item.projectId},#{item.createTime},#{item.upUser})
+        </foreach>
+    </insert>
+
+    <select id="selectAccountsListNoAssigned" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        where
+        IFNULL(accounts.assigned_to, '') = '' and accounts.acc_status = 0 and accounts.del_flag = 0
+        <if test="projectId != null  and projectId != ''">
+            and accounts.project_id = #{projectId}
+        </if>
+        <if test="num != 0 and num != null">
+            limit 0,#{num}
+        </if>
+    </select>
+
+    <update id="updateAccountsABatchllocation">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE accounts
+            SET assigned_to = #{item.assignedTo}
+            WHERE account_id = #{item.accountId}
+        </foreach>
+    </update>
+
+    <update id="freeAccount">
+        <if test="list != null and list.size > 0">
+            <foreach collection="list" item="item" separator=";">
+                UPDATE accounts
+                SET assigned_to = null
+                WHERE account_id = #{item.accountId}
+            </foreach>
+        </if>
+    </update>
+
+    <select id="selectAccountsListByprojectDel" resultMap="AccountsResult">
+        SELECT a.account_id
+        FROM accounts a
+        WHERE NOT EXISTS (SELECT 1
+                          FROM task_send_num tsn
+                          WHERE tsn.task_content_id = a.account)
+          and del_flag = 1
+          and project_id = #{project}
+          and acc_status != -1
+        limit 0,#{batchSize}
+    </select>
+
+    <update id="updateAccountsRecycleAccount">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE accounts SET
+            del_flag = 0,
+            assigned_to = NULL
+            WHERE account_id = #{item.accountId}
+        </foreach>
+    </update>
+
+    <delete id="recycleAccountBatch">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE accounts SET
+            del_flag = 0,
+            assigned_to = NULL
+            WHERE account_id = #{item}
+        </foreach>
+    </delete>
+
+    <select id="selectAccountsByAccount" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        where accounts.account = #{account}
+    </select>
+
+    <select id="selectAccountsListNoBan" parameterType="Accounts" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        <where>
+            <if test="accountId != null ">
+                and accounts.account_id = #{accountId}
+            </if>
+            <if test="assignedToName != null and assignedToName != ''">
+                and su.user_name like concat('%', #{assignedToName}, '%')
+            </if>
+            <if test="account != null  and account != ''">
+                and accounts.account = #{account}
+            </if>
+            <if test="Cookie != null  and Cookie != ''">
+                and accounts.Cookie = #{Cookie}
+            </if>
+            <if test="deviceInfo != null  and deviceInfo != ''">
+                and accounts.deviceInfo = #{deviceInfo}
+            </if>
+            <if test="userName != null  and userName != ''">
+                and accounts.userName like concat('%', #{userName}, '%')
+            </if>
+            <if test="country != null  and country != ''">
+                and accounts.country = #{country}
+            </if>
+            <if test="password != null  and password != ''">
+                and accounts.password = #{password}
+            </if>
+            <if test="accStatus != null ">
+                and accounts.acc_status = #{accStatus}
+            </if>
+            <if test="assignedTo != null ">
+                and accounts.assigned_to = #{assignedTo}
+            </if>
+            <if test="projectId != null  and projectId != ''">
+                and accounts.project_id = #{projectId}
+            </if>
+            <if test="startTime != null">
+                and accounts.start_time = #{startTime}
+            </if>
+            <if test="banTime != null">
+                and accounts.ban_time = #{banTime}
+            </if>
+            <if test="reason != null and reason != ''">
+                and accounts.reason = #{reason}
+            </if>
+            and accounts.del_flag=0 and accounts.acc_status = 0
+        </where>
+    </select>
+
+    <select id="selectAccountsByAccountSet" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        WHERE assigned_to IN
+        <foreach item="userId" collection="collection" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+    </select>
+
+    <delete id="emptyAccount">
+        delete
+        from accounts
+        where accounts.project_id = #{projectId}
+    </delete>
+
+    <delete id="emptyAccountNoAssigned">
+        delete
+        from accounts
+        where accounts.assigned_to is null
+          and accounts.project_id = #{projectId}
+    </delete>
+
+    <delete id="emptyAccountNoBan">
+        delete
+        from accounts
+        where accounts.acc_status = -1
+          and accounts.project_id = #{projectId}
+    </delete>
+
+    <delete id="emptyAccountDustbin">
+        delete
+        from accounts
+        where accounts.del_flag = 1
+          and accounts.project_id = #{projectId}
+    </delete>
+
+    <select id="selectAccountsListIsAssigned" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        where accounts.project_id = #{projectId} and accounts.assigned_to is not null and accounts.del_flag = 0 ORDER BY
+        accounts.acc_status DESC
+    </select>
+
+    <select id="isRepeat" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        where accounts.account in
+        <foreach item="item" collection="collection" open="(" separator="," close=")">
+            #{item.account}
+        </foreach>
+    </select>
+
+    <select id="selectAccountsListByprojectDelCount" resultType="int">
+        SELECT count(0)
+        FROM accounts a
+        WHERE NOT EXISTS (SELECT 1
+                          FROM task_send_num tsn
+                          WHERE tsn.task_content_id = a.account)
+          and del_flag = 1
+          and project_id = #{project}
+          and acc_status != -1
+    </select>
+
+    <select id="selectAccountsListIsBan" resultMap="AccountsResult">
+        select account from accounts
+        <where>
+            <if test="userIdSet != null and userIdSet.size() > 0">
+                and assigned_to IN
+                <foreach item="userId" collection="userIdSet" open="(" separator="," close=")">
+                    #{userId}
+                </foreach>
+            </if>
+            and del_flag = 0 and acc_status = -1
+        </where>
+    </select>
+
+    <select id="selectAccountsCountByUserID" resultType="int">
+        SELECT count(0)
+        FROM accounts a
+        WHERE del_flag = 0
+          and acc_status = 0
+          and assigned_to = #{userId}
+    </select>
+
+    <select id="selectAccountsByAccountSetAndStatus" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        <where>
+            <if test="longs != null and longs.size() > 0">
+                assigned_to IN
+                <foreach collection="longs" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="status != null">
+                and acc_status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <update id="Unblocking">
+        UPDATE accounts SET acc_status = #{status} where account_id in
+        <foreach item="account" collection="accounts" open="(" separator="," close=")">
+            #{account.accountId}
+        </foreach>
+    </update>
+
+    <select id="selectAccountByIds" resultMap="AccountsResult">
+        <include refid="selectAccountsVo"/>
+        WHERE accounts.account_id IN
+        <foreach item="id" collection="accountIds" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <update id="resetAccount">
+        UPDATE accounts SET acc_status = 0,assigned_to=null,del_flag=0,start_time=null,ban_time=null where account_id in
+        <foreach item="account" collection="accounts" open="(" separator="," close=")">
+            #{account.accountId}
+        </foreach>
+    </update>
+</mapper>
