@@ -50,6 +50,24 @@ public class ChatRecord extends BaseEntity
     @Excel(name = "1成功 0等待 -1失败")
     private Long success;
 
+    /**
+     * 给ai打分分数（1-10分）
+     */
+    @Excel(name = "给ai打分分数（1-10分）")
+    private Integer aiScore;
+
+    /**
+     * 该记录是否为ai回复（1是，0否）
+     */
+    @Excel(name = "该记录是否为ai回复（1是，0否）")
+    private Integer type;
+
+    /**
+     * 该记录打分是否已提交给ai训练（1是，0否）
+     */
+    @Excel(name = "该记录打分是否已提交给ai训练（1是，0否）")
+    private Integer isAiUse;
+
     /**去重 */
-    private String id;
+    private Long id;
 }

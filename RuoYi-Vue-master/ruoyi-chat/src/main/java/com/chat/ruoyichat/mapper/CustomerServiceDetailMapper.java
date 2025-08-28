@@ -8,15 +8,15 @@ import com.chat.ruoyichat.domain.CustomerServiceDetail;
 
 /**
  * 客服号详情，用于存储客服号详细信息Mapper接口
- * 
+ *
  * @author ruoyi
  * @date 2025-03-04
  */
-public interface CustomerServiceDetailMapper 
+public interface CustomerServiceDetailMapper
 {
     /**
      * 查询客服号详情，用于存储客服号详细信息
-     * 
+     *
      * @param customerId 客服号详情，用于存储客服号详细信息主键
      * @return 客服号详情，用于存储客服号详细信息
      */
@@ -24,7 +24,7 @@ public interface CustomerServiceDetailMapper
 
     /**
      * 查询客服号详情，用于存储客服号详细信息列表
-     * 
+     *
      * @param customerServiceDetail 客服号详情，用于存储客服号详细信息
      * @return 客服号详情，用于存储客服号详细信息集合
      */
@@ -33,7 +33,7 @@ public interface CustomerServiceDetailMapper
 
     /**
      * 新增客服号详情，用于存储客服号详细信息
-     * 
+     *
      * @param customerServiceDetail 客服号详情，用于存储客服号详细信息
      * @return 结果
      */
@@ -41,7 +41,7 @@ public interface CustomerServiceDetailMapper
 
     /**
      * 修改客服号详情，用于存储客服号详细信息
-     * 
+     *
      * @param customerServiceDetail 客服号详情，用于存储客服号详细信息
      * @return 结果
      */
@@ -49,7 +49,7 @@ public interface CustomerServiceDetailMapper
 
     /**
      * 删除客服号详情，用于存储客服号详细信息
-     * 
+     *
      * @param customerId 客服号详情，用于存储客服号详细信息主键
      * @return 结果
      */
@@ -57,7 +57,7 @@ public interface CustomerServiceDetailMapper
 
     /**
      * 批量删除客服号详情，用于存储客服号详细信息
-     * 
+     *
      * @param customerIds 需要删除的数据主键集合
      * @return 结果
      */

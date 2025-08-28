@@ -72,4 +72,28 @@ public class SessionRecord extends BaseEntity
     /** 哪个账号开始的聊天 */
     @Excel(name = "账号")
     private String account;
+
+    /**
+     * 给用户意向打分（1-10分）
+     */
+    @Excel(name = "给用户意向打分（1-10分）")
+    private Integer customScore;
+
+    /**
+     * 给ai打分分数（1-10分）
+     */
+    @Excel(name = "给ai打分分数（1-10分）")
+    private Integer aiScore;
+
+    /**
+     * 是否开启ai会话（1开，0关）
+     */
+    @Excel(name = "是否开启ai会话（1开，0关）")
+    private Integer switcher;
+
+    /**
+     * 该记录打分是否已提交给ai训练（1是，0否）
+     */
+    @Excel(name = "该会话打分是否已提交给ai训练")
+    private Integer isAiUse;
 }

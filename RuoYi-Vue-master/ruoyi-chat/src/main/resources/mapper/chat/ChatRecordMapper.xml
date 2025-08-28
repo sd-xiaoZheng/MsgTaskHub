@@ -3,7 +3,7 @@
 PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chat.ruoyichat.mapper.ChatRecordMapper">
-    
+
     <resultMap type="ChatRecord" id="ChatRecordResult">
         <result property="chatId"    column="chat_id"    />
         <result property="chatInout"    column="chat_inout"    />
@@ -15,23 +15,26 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectChatRecordVo">
-        select chat_id, chat_inout, message_content, send_time, session_id, success, id from chat_record
+        select chat_id, chat_inout, message_content, send_time, session_id, success, ai_score, type, is_ai_Use, id from chat_record
     </sql>
 
     <select id="selectChatRecordList" parameterType="ChatRecord" resultMap="ChatRecordResult">
         <include refid="selectChatRecordVo"/>
-        <where>  
+        <where>
             <if test="chatInout != null "> and chat_inout = #{chatInout}</if>
 <!--            <if test="messageContent != null  and messageContent != ''"> and message_content like concat('%', #{messageContent}, '%')</if>-->
             <if test="messageContent != null  and messageContent != ''"> and message_content = #{messageContent}</if>
             <if test="sendTime != null "> and send_time = #{sendTime}</if>
             <if test="sessionId != null  and sessionId != ''"> and session_id = #{sessionId}</if>
             <if test="success != null  and success != ''"> and success = #{success}</if>
-            <if test="id != null and id != ''"> and id = #{id}</if>
+            <if test="aiScore != null "> and ai_score = #{aiScore}</if>
+            <if test="type != null "> and type = #{type}</if>
+            <if test="isAiUse != null "> and is_ai_use = #{isAiUse}</if>
+            <if test="id != null "> and id = #{id}</if>
         </where>
         order by chat_id
     </select>
-    
+
     <select id="selectChatRecordByChatId" parameterType="String" resultMap="ChatRecordResult">
         <include refid="selectChatRecordVo"/>
         where chat_id = #{chatId} order by chat_id
@@ -47,6 +50,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sendTime != null">send_time,</if>
             <if test="sessionId != null">session_id,</if>
             <if test="success != null">success,</if>
+            <if test="aiScore != null">ai_score,</if>
+            <if test="type != null">type,</if>
+            <if test="isAiUse != null">is_ai_use,</if>
             <if test="id != null">id,</if>
          </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
@@ -56,6 +62,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sendTime != null">#{sendTime},</if>
             <if test="sessionId != null">#{sessionId},</if>
             <if test="success != null">#{success},</if>
+            <if test="aiScore != null">#{aiScore},</if>
+            <if test="type != null">#{type},</if>
+            <if test="isAiUse != null">#{isAiUse},</if>
             <if test="id != null">#{id},</if>
          </trim>
     </insert>
@@ -68,6 +77,9 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="sendTime != null">send_time = #{sendTime},</if>
             <if test="sessionId != null">session_id = #{sessionId},</if>
             <if test="success != null">success = #{success},</if>
+            <if test="aiScore != null">ai_score = #{aiScore},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="isAiUse != null">is_ai_use = #{isAiUse},</if>
             <if test="id != null">id = #{id},</if>
         </trim>
         where chat_id = #{chatId}
@@ -78,7 +90,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </delete>
 
     <delete id="deleteChatRecordByChatIds" parameterType="String">
-        delete from chat_record where chat_id in 
+        delete from chat_record where chat_id in
         <foreach item="chatId" collection="array" open="(" separator="," close=")">
             #{chatId}
         </foreach>

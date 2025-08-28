@@ -17,6 +17,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <result property="projectId"    column="project_id"    />
         <result property="endText"    column="end_text"    />
         <result property="account"    column="account"    />
+        <result property="customScore"    column="custom_score"    />
+        <result property="aiScore"    column="ai_score"    />
+        <result property="switcher"    column="switcher"    />
+        <result property="isAiUse"    column="is_ai_use"    />
     </resultMap>
 
     <resultMap id="CountResultMap" type="CountResult">
@@ -25,7 +29,7 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
     </resultMap>
 
     <sql id="selectSessionRecordVo">
-        select session_id, cust_id, cust_contact, begin_time, latest_chat_time, message_count, is_favorite, is_pinned, message_type, project_id,end_text,account from session_record
+        select session_id, cust_id, cust_contact, begin_time, latest_chat_time, message_count, is_favorite, is_pinned, message_type, project_id, end_text, account, custom_score, ai_score, switcher, is_ai_use from session_record
     </sql>
 
     <select id="selectSessionRecordList" parameterType="SessionRecord" resultMap="SessionRecordResult">
@@ -42,6 +46,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
             <if test="endText != null  and endText != ''"> and end_text = #{endText}</if>
             <if test="account != null  and account != ''"> and account = #{account}</if>
+            <if test="customScore != null "> and custom_score = #{customScore}</if>
+            <if test="aiScore != null "> and ai_score = #{aiScore}</if>
+            <if test="switcher != null "> and switcher = #{switcher}</if>
+            <if test="isAiUse != null "> and is_ai_use = #{isAiUse}</if>
         </where>
         order by is_pinned desc,latest_chat_time desc
     </select>
@@ -66,6 +74,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="projectId != null">project_id,</if>
             <if test="endText != null">end_text,</if>
             <if test="account != null">account,</if>
+            <if test="customScore != null">custom_score,</if>
+            <if test="aiScore != null">ai_score,</if>
+            <if test="switcher != null">switcher,</if>
+            <if test="isAiUse != null">is_ai_use,</if>
          </trim>
         select
         <trim suffixOverrides=",">
@@ -81,7 +93,11 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="messageType != null">#{messageType},</if>
             <if test="projectId != null">#{projectId},</if>
             <if test="endText != null">#{endText},</if>
-            <if test="account != null">#{account}</if>
+            <if test="account != null">#{account},</if>
+            <if test="customScore != null">#{customScore},</if>
+            <if test="aiScore != null">#{aiScore},</if>
+            <if test="switcher != null">#{switcher},</if>
+            <if test="isAiUse != null">#{isAiUse}</if>
          </trim>
         <if test="custContact != null and custId != null">
         FROM DUAL
@@ -105,6 +121,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="projectId != null">project_id = #{projectId},</if>
             <if test="endText != null">end_text = #{endText},</if>
             <if test="account != null">account = #{account},</if>
+            <if test="customScore != null ">custom_score = #{customScore},</if>
+            <if test="aiScore != null ">ai_score = #{aiScore},</if>
+            <if test="switcher != null ">switcher = #{switcher},</if>
+            <if test="isAiUse != null ">is_ai_use = #{isAiUse},</if>
         </trim>
         where session_id = #{sessionId}
     </update>
@@ -139,6 +159,10 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
             <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
             <if test="endText != null  and endText != ''"> and end_text = #{endText}</if>
             <if test="account != null  and account != ''"> and account = #{account}</if>
+            <if test="customScore != null "> and custom_score = #{customScore}</if>
+            <if test="aiScore != null "> and ai_score = #{aiScore}</if>
+            <if test="switcher != null "> and switcher = #{switcher}</if>
+            <if test="isAiUse != null "> and is_ai_use = #{isAiUse}</if>
         </where>
         order by is_pinned desc,latest_chat_time desc
     </select>

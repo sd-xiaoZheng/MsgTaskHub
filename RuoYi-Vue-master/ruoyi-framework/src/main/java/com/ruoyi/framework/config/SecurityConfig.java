@@ -113,7 +113,8 @@ public class SecurityConfig {
                                     "/captchaImage",
                                     "/Msg/**",
                                     "/PhoneInfo/**",
-                                    "/ruoyichat/**"
+                                    "/ruoyichat/**",
+                                    "/system/taskImg/getAvatar"
 
 
                             ).permitAll()

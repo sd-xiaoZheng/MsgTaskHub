@@ -308,4 +308,57 @@ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         <include refid="selectTaskContentVo"/>
         where recipient_list = #{contactValue} order by assigned_to desc limit 1
     </select>
+
+    <select id="selectTaskContentListCount" resultType="int">
+        <include refid="selectTaskContentVo"/>
+        <where>
+            <if test="taskId != null  and taskId != ''">
+                and task_id = #{taskId}
+            </if>
+            <if test="recipientList != null  and recipientList != ''">
+                and recipient_list = #{recipientList}
+            </if>
+            <if test="templateId != null  and templateId != ''">
+                and template_id = #{templateId}
+            </if>
+            <if test="taskStatus != null">
+                and task_status = #{taskStatus}
+            </if>
+            <if test="assignedTo != null  and assignedTo != ''">
+                and assigned_to = #{assignedTo}
+            </if>
+            <if test="title != null  and title != ''">
+                and title = #{title}
+            </if>
+            <if test="isUse != null">
+                and is_use = #{isUse}
+            </if>
+            <!--            <if test="delFlag != null"> and del_flag = #{delFlag}</if>-->
+            and del_flag = 0
+        </where>
+        limit 0,20
+    </select>
+
+
+    <select id="selectTaskContentListSucc4Export" resultMap="TaskContentResult">
+        SELECT tc.*
+        FROM task_content tc
+        WHERE tc.assigned_to IN
+        <foreach item="id" collection="userId" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and task_status=1
+        ORDER BY assigned_to,task_status
+    </select>
+
+    <select id="selectTaskContentListNoSucc4Export" resultMap="TaskContentResult">
+        SELECT tc.*
+        FROM task_content tc
+        WHERE tc.assigned_to IN
+        <foreach item="id" collection="userId" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        and task_status!=1
+        ORDER BY assigned_to,task_status
+    </select>
 </mapper>

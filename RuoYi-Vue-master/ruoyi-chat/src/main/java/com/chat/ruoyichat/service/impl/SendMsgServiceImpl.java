@@ -4,9 +4,14 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.chat.ruoyichat.domain.*;
-import com.chat.ruoyichat.domain.dto.*;
+import com.chat.ruoyichat.domain.dto.BackMsg;
+import com.chat.ruoyichat.domain.dto.Message;
+import com.chat.ruoyichat.domain.dto.MsgBoj;
+import com.chat.ruoyichat.domain.dto.PhoneInfo;
+import com.chat.ruoyichat.domain.sendDto.AccountInfo;
 import com.chat.ruoyichat.domain.sendDto.SendMsgObj;
 import com.chat.ruoyichat.domain.sendDto.UserSimpleInfo;
+import com.chat.ruoyichat.domain.vo.ReBack2;
 import com.chat.ruoyichat.mapper.*;
 import com.chat.ruoyichat.service.ISendMsgService;
 import com.chat.ruoyichat.websocket.WebSocketService;
@@ -14,9 +19,9 @@ import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.core.domain.entity.SysUser;
 import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
+import com.ruoyi.common.utils.StringUtils;
 import com.ruoyi.common.utils.uuid.IdUtils;
 import com.ruoyi.system.mapper.SysUserMapper;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,12 +66,16 @@ public class SendMsgServiceImpl implements ISendMsgService {
     private ChatRecordMapper chatRecordMapper;
     @Autowired
     private ProjectSetMapper projectSetMapper;
+    @Autowired
+    private TaskImgMapper taskImgMapper;
     private final String noAssInRedis = CacheConstants.No_Ass_IN_REDIS;
     private final String replyNumKey = CacheConstants.REPLY_NUM;
     private final String successNumKey = CacheConstants.SUCCESS_Num;
     private final String sendNumKey = CacheConstants.SEND_NUM;
     private final String binCsd = CacheConstants.binCsd;
     private final String isReplyKey = CacheConstants.IS_REPLY_KEY;
+//    @Autowired
+//    private WebSocketService webSocketService;
 
     /**
      * 获取用户信息
@@ -77,30 +86,38 @@ public class SendMsgServiceImpl implements ISendMsgService {
     @Override
     public List getCustomerInfo(String pcNum) {
         Object csdObj = redisCache.getCacheObject(binCsd);
-        if (Objects.nonNull(csdObj)) {
+        if (Objects.nonNull(csdObj)) { // 如果缓存中有数据，直接获取处理返回客服信息
             JSONArray objects = JSON.parseArray(csdObj.toString());
             objects.forEach(obj -> {
                 JSONObject obj1 = (JSONObject) obj;
-                obj1.remove("@type");
+                obj1.remove("@type"); // 去除格式
             });
             String strObj = objects.toString();
             return JSON.parseObject(strObj, List.class);
         }
-
+        // 缓存没数据，从数据库查
         List<CustomerServiceDetail> customerServiceDetails = null;
         ArrayList<UserSimpleInfo> userSimpleInfoArrayList = new ArrayList<UserSimpleInfo>();
-        if (pcNum.equals("A1")) {
+        if (pcNum.equals("A1")) { // 等于A1？查找所有客服（非组长）？
+            // 从表customer_service_detail获取
+            // manager_id 大于 0 且 customer_status 不等于 -1 和 1
+            // 的数据
             customerServiceDetails = customerServiceDetailMapper.selectCustomerServiceDetailList4getCustomerInfo();
-        } else {
+        } else { // 否则将pcNum作为userName并从sysUser表获取其userId（组长id），然后从表customer_service_detail获取客服信息数据
+            // where u.user_name = #{userName} and u.del_flag = '0'
             SysUser sysUser = sysUserMapper.selectUserByUserName(pcNum);
             if (ObjectUtils.isEmpty(sysUser)) {
                 throw new ServiceException("没有该小组");
             }
+            // 获取账号状态（是否离职）
             String status = sysUser.getStatus();
-            if (status.equals("1")) {
+            if (status.equals("1")) { // 0正常 1离职
                 throw new ServiceException("没有该小组");
             }
             Long userId = sysUser.getUserId();
+            // 获取该组长手下的未被删除的客服，升序排序
+            // where manager_id = #{managerId} and customer_status != -1
+            // order by csd.user_id
             customerServiceDetails = customerServiceDetailMapper.selectCustomerDetailByManagerId(userId);
         }
         //不给组长
@@ -110,8 +127,8 @@ public class SendMsgServiceImpl implements ISendMsgService {
             Long userId2 = customerServiceDetail.getUserId();
             String userName = customerServiceDetail.getUserName();
             UserSimpleInfo userSimpleInfo = new UserSimpleInfo(userId2, userName, false);
-            Long managerId = customerServiceDetail.getManagerId();
-            if (managerId.equals(-1L)) {
+            Long managerId = customerServiceDetail.getManagerId(); // 获取组长id
+            if (managerId.equals(-1L)) { // 表示当前这个客服是组长
                 userSimpleInfo.setAdmin(true);
             }
             userSimpleInfoArrayList.add(userSimpleInfo);
@@ -119,9 +136,9 @@ public class SendMsgServiceImpl implements ISendMsgService {
 
 //        Collections.sort(list, Comparator.comparingLong(CustomerServiceDetail::getTimestamp).reversed());
         List<UserSimpleInfo> collect = userSimpleInfoArrayList.stream()
-                .sorted(Comparator.comparingLong(UserSimpleInfo::getUserId))
+                .sorted(Comparator.comparingLong(UserSimpleInfo::getUserId)) // 按照userId升序排序
                 .collect(Collectors.toList());
-        //六十秒更新redis
+        // 六十秒更新redis
         redisCache.setCacheObject(binCsd, collect, 60, TimeUnit.SECONDS);
         return collect;
     }
@@ -143,18 +160,20 @@ public class SendMsgServiceImpl implements ISendMsgService {
 
         Boolean b = redisCache.hasKey(key + userId);
         if (b) {
+            // 从缓存中获取聊天对象sendMsgObj
             Object o = redisCache.rightPop(key + userId);
             JSONObject jsonObject1 = JSON.parseObject(o.toString());
             String strObj = jsonObject1.toString();
             SendMsgObj sendMsgObj = JSON.parseObject(strObj, SendMsgObj.class);
-            CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(userId);
-            ProjectSet projectSet = projectSetMapper.selectProjectSetByProjectId(customerServiceDetail.getProjectId());
-            if (projectSet.getIsSendNum().equals(1L)) {
-                //输入框是否算发送条数
-                redisCache.leftPush(sendNumKey, customerServiceDetail);
+            Long userId1 = sendMsgObj.getUserId();
+            if (userId1.equals(userId)) {
+                customerServiceDetailMapper.updateCustomerServiceDetailSub(userId);
+                return sendMsgObj;
+            } else {
+                redisCache.leftPush(key + userId, sendMsgObj);
             }
-            return sendMsgObj;
         }
+        // 缓存中没有，则从表sysUser通过userId查询
         SysUser sysUser = sysUserMapper.selectUserById(userId);
         if (ObjectUtils.isEmpty(sysUser)) {
             throw new ServiceException("暂无该用户");
@@ -166,7 +185,7 @@ public class SendMsgServiceImpl implements ISendMsgService {
         taskContent.setAssignedTo(userId);
         taskContent.setTaskStatus(2);
         taskContent.setIsUse(0L);
-        //获取出员工所有任务
+        //获取出员工所有进行中、可以用的任务
 //        startPage();
         List<TaskContent> taskContents = taskContentMapper.selectTaskContentListPages(taskContent);
 //        List<TaskContent> taskContents = taskContentMapper.selectTaskContentList(taskContent);
@@ -177,6 +196,7 @@ public class SendMsgServiceImpl implements ISendMsgService {
         String accountNum = CacheConstants.ACCOUNT_NUM;
         CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(userId);
 //        CustomerServiceDetail leader = customerServiceDetailMapper.selectCustomerDetailByUserId(customerServiceDetail.getManagerId());
+        // where project_id = #{projectId}⬇
         ProjectSet projectSet = projectSetMapper.selectProjectSetByProjectId(customerServiceDetail.getProjectId());
 //        Integer maxLoad = leader.getIsEnough();//TODO 可以优化 存入redis
         int maxLoad = (int) (long) projectSet.getAccountSendNum();
@@ -196,7 +216,7 @@ public class SendMsgServiceImpl implements ISendMsgService {
             //分拣出没有cd的
             if (!redisCache.hasKey(accounts2.getAccount())) {
                 accountMap.put(accounts2.getAccountId(), accounts2);
-                accounts3.add(accounts2);
+                accounts3.add(accounts2);// 空闲的账号
             }
         }
         if (accountMap.isEmpty()) {
@@ -205,11 +225,11 @@ public class SendMsgServiceImpl implements ISendMsgService {
         //所有的账号
         HashSet<String> taskIds = new HashSet<>();
         for (Accounts content : accounts3) {
-            taskIds.add(content.getAccount());
+            taskIds.add(content.getAccount()); // 把筛选过的账号（号码）放进taskIds
         }
-        //查账号的发送情况 (没法送过的没有 定时任务没有扫到(说明还在redis中)的没有)
+        //查账号的发送情况 (没发送过的没有 定时任务没有扫到(说明还在redis中)的没有)
         List<TaskSendNum> taskSendNums = taskSendNumMapper.selectTaskSendNumListByIds(taskIds);
-        //这是使用发送的账号
+        //这是使用发送的账号  找一个空闲且未到达最大发送数量的号
         Accounts useAccount = null;
         if (!taskSendNums.isEmpty()) {
             HashMap<String, Long> sendNumMap = new HashMap<>();
@@ -220,14 +240,13 @@ public class SendMsgServiceImpl implements ISendMsgService {
             for (Accounts content : accounts3) {
                 String accountId = content.getAccount();
                 Long sendNum = sendNumMap.get(accountId);
+                // 过滤出account3中未发送过的账号
                 if (ObjectUtils.isEmpty(sendNum)) {
-                    //可能是第一次发
-                    //进来这里说明账号发送数量还没有存过库
+                    //可能是第一次发，也可能是redis未同步进库
                     //进redis查数量
                     Integer expire = redisCache.getCacheObject(accountNum + accountId);
-                    if (ObjectUtils.isEmpty(expire)) {
-                        //直接发送
-                        //第一次发送
+                    if (ObjectUtils.isEmpty(expire)) { // redis没有
+                        //第一次发送，则直接发送
                         content.setStartTime(new Date());
                         accountsMapper.updateAccounts(content);
                         useAccount = content;
@@ -235,7 +254,7 @@ public class SendMsgServiceImpl implements ISendMsgService {
 //                        redisCache.addOne(accountNum + accountId);//？？？
                         break;
                     }
-                    if (expire < maxLoad) {
+                    if (expire < maxLoad) { // redis有但是还没满
                         //也可以发
                         useAccount = content;
                         redisCache.addOne(accountNum + accountId);
@@ -248,7 +267,7 @@ public class SendMsgServiceImpl implements ISendMsgService {
                         //拿redis
                         Integer expire = redisCache.getCacheObject(accountNum + accountId);
                         if (ObjectUtils.isEmpty(expire)) {
-                            //这里可能有bug 就是redis中没有是正好被定时任务扫走了，不过几率特别小
+                            // todo 这里可能有bug 就是redis中没有是正好被定时任务扫走了，不过几率特别小
                             useAccount = content;
                             redisCache.setOne(accountNum + accountId, (int) (sendNum + 1));
                             break;
@@ -265,38 +284,34 @@ public class SendMsgServiceImpl implements ISendMsgService {
                         if (!ObjectUtils.isEmpty(expire)) {
                             redisCache.deleteObject(accountNum + accountId);
                         }
-//                        if (expire < 0) {
-//                            //TODO到这里了就说明这个号有一次发送失败了 是否是封禁了发送失败？如果是就不需要这里了 这里会重试
-//                            useAccount = content;
-//                            redisCache.addOne(accountNum + accountId);
-////                            redisTemplateObj.opsForValue().increment(accountNum + taskContentId);
-//                        }//没有就是满了 进行下一个
                     }
                 }
             }
-        } else {
-            useAccount = accounts3.get(0);
+        } else { // 库里面没有
+            useAccount = accounts3.get(0); // todo 这里可能redis已经满了，缺个校验（全account3都遍历一遍）
             String accountId = useAccount.getAccount();
             redisCache.addOne(accountNum + accountId);
 //            redisTemplateObj.opsForValue().increment(accountNum + taskContentId);
         }
-        //拿出可使用账号
+        //拿出空闲可使用账号
         Accounts accounts2 = null;
-        if (useAccount != null) {
-            accounts2 = accountMap.get(useAccount.getAccountId());
-        } else {
-            throw new ServiceException("用户无可用账号");
+        {   // todo 这个块好像没啥用，useAccount与accounts2是同个东西
+            if (useAccount != null) {
+                accounts2 = accountMap.get(useAccount.getAccountId());
+            } else {
+                throw new ServiceException("用户无可用账号");
+            }
         }
         //拿未发送任务
         TaskContent task = null;
-        Collections.shuffle(taskContents);//乱序
-        for (TaskContent content : taskContents) {
+        Collections.shuffle(taskContents);// 原地乱序集合
+        for (TaskContent content : taskContents) { // 放进redis并更新进库
             String taskContentId = content.getTaskContentId();
             Object i = redisCache.getCacheObject(taskKey + taskContentId);
             if (ObjectUtils.isEmpty(i)) {
                 redisCache.setOne(taskKey + taskContentId, 1);
                 task = content;
-                task.setIsUse(1L);
+                task.setIsUse(1L); // 0能用 1不能用
                 taskContentMapper.updateTaskContent(task);
                 break;
             }
@@ -308,32 +323,67 @@ public class SendMsgServiceImpl implements ISendMsgService {
 //            customerServiceDetail.setSendNum(sendNum + 1);
         //组装消息
         SendMsgObj sendMsgObj = new SendMsgObj();
-        sendMsgObj.setId(task.getTaskContentId());
+        sendMsgObj.setId(task.getTaskContentId()); // 随便一个任务
 
 
+//        if (!JSON.isValid(accounts2.getDeviceInfo())) {
+        sendMsgObj.setMobileNum(accounts2.getAccount());
+        sendMsgObj.setMyphonenumber(accounts2.getAccount());
+//        } else {
+//            HashMap<String, Object> map = JSON.parseObject(accounts2.getDeviceInfo(), HashMap.class);
+//            String email = map.get("email").toString();
+//            sendMsgObj.setMobileNum(email);
+//            sendMsgObj.setMyphonenumber(email);
+//        }
         //通过json拿邮箱
-        if (!JSON.isValid(accounts2.getDeviceInfo())) {
-            sendMsgObj.setMobileNum(accounts2.getAccount());
-            sendMsgObj.setMyphonenumber(accounts2.getAccount());
-        } else {
-            HashMap<String, Object> map = JSON.parseObject(accounts2.getDeviceInfo(), HashMap.class);
-            String email = map.get("email").toString();
-            sendMsgObj.setMobileNum(email);
-            sendMsgObj.setMyphonenumber(email);
-        }
-
         sendMsgObj.setType("text");
-        sendMsgObj.setText(task.getTemplateId());
+        //这里如果任务是图片任务就直接插图片获取图片
+        String templateId = task.getTemplateId();
+        //发送的消息体
+        AccountInfo accountInfo = sendMsgObj.getAccountInfo();
+        if (Objects.isNull(templateId)) {
+            String taskId = task.getTaskId();
+            Task imgTask = taskMapper.selectTaskByTaskId(taskId);
+            if (imgTask.getIsImg().equals(1L)) {
+                //这里发图片
+                TaskImg taskImg = taskImgMapper.randOneByUserId(userId);
+                if (Objects.nonNull(taskImg)) {
+                    accountInfo.setMessage("");
+                    accountInfo.setMediaUrl(taskImg.getPath());
+                } else {
+                    TaskImg taskGroup = taskImgMapper.randOneByUserId(customerServiceDetail.getManagerId());
+                    if (Objects.nonNull(taskGroup)) {
+                        accountInfo.setMessage("");
+                        accountInfo.setMediaUrl(taskGroup.getPath());
+                    } else {
+                        //发送内容是空，图片个人没上传，组长也没有上传
+                        suspendTask(task.getTaskId(), customerServiceDetail);
+                        throw new ServiceException("图片为空，暂停任务");
+                    }
+                }
+            }
+        } else {
+            accountInfo.setMessage(task.getTemplateId());
+        }
         sendMsgObj.setOther(task.getRecipientList());
         sendMsgObj.setUserId(userId);
         sendMsgObj.setUserName(sysUser.getUserName());
         sendMsgObj.setCookie(accounts2.getCookie());
         sendMsgObj.setDeviceInfo(accounts2.getDeviceInfo());
-        sendMsgObj.setPassword(accounts2.getPassword());
-        Random random = new Random();
-        Integer gapTime = projectSet.getGapTime();//发送间隔
+
+        accountInfo.setAccount_sid(accounts2.getUserName());
+        accountInfo.setAuth_token(accounts2.getPassword());
+        accountInfo.setCurrentNumber("+" + accounts2.getAccount());
+        accountInfo.setRecipient("+" + task.getRecipientList());
+
+        accountInfo.setAccount(accounts2.getAccount());
+        accountInfo.setPassword(accounts2.getPassword());
+        accountInfo.setDeviceInfo(accounts2.getDeviceInfo());
+        accountInfo.setCookie(accounts2.getCookie());
+        accountInfo.setUserName(accounts2.getUserName());
+
         Integer gapValue = projectSet.getGapValue();//达到6条等待时间次数
-        int randomNumber = random.nextInt((gapTime / 2) + 1) + gapTime;
+        int randomNumber = projectSet.getGapTime();//发送间隔
 //        redisCache.setCacheObject(email, 1, 1, TimeUnit.MINUTES);
 //        redisCache.setCacheObject(email, 1, randomNumber, TimeUnit.MINUTES);
 
@@ -343,80 +393,51 @@ public class SendMsgServiceImpl implements ISendMsgService {
         //在这里判断是否到了发送等待间隔次数
         Integer expire = redisCache.getCacheObject(accountNum + accounts2.getAccount());
 
-        if (!JSON.isValid(accounts2.getDeviceInfo())) {
-
-            if (expire % gapValue == 0) {
+//        if (!JSON.isValid(accounts2.getDeviceInfo())) {
+            if (expire.equals(gapValue)) {
                 redisCache.setCacheObject(accounts2.getAccount(), 1, projectSet.getGapLongTime(), TimeUnit.SECONDS);
             } else {
                 redisCache.setCacheObject(accounts2.getAccount(), 1, randomNumber, TimeUnit.SECONDS);
             }
-        } else {
-            HashMap<String, Object> map = JSON.parseObject(accounts2.getDeviceInfo(), HashMap.class);
-            String email = map.get("email").toString();
-            if (expire % gapValue == 0) {
-                redisCache.setCacheObject(email, 1, projectSet.getGapLongTime(), TimeUnit.SECONDS);
-            } else {
-                redisCache.setCacheObject(email, 1, randomNumber, TimeUnit.SECONDS);
-            }
-        }
-
-//CAS customerServiceDetail 的 SendNum
-//        int rows = 0;
-//        int retryCount = 5; // 重试次数
-//        boolean flag = true;
-//        while (rows == 0 && retryCount > 0 && flag) {//去批量修改数据库
-//            customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(userId);
-//            Long sendNum = customerServiceDetail.getSendNum();
-//            Long surplusNum = customerServiceDetail.getSurplusNum();
-//            if (sendNum < surplusNum) {
-//                customerServiceDetail.setSendNum(sendNum + 1);
-//                rows = customerServiceDetailMapper.updateCustomerServiceDetail(customerServiceDetail);
+//        } else {
+//            HashMap<String, Object> map = JSON.parseObject(accounts2.getDeviceInfo(), HashMap.class);
+//            String email = map.get("email").toString();
+//            if (expire.equals(gapValue)) {
+//                redisCache.setCacheObject(email, 1, projectSet.getGapLongTime(), TimeUnit.SECONDS);
 //            } else {
-//                flag = false;
+//                redisCache.setCacheObject(email, 1, randomNumber, TimeUnit.SECONDS);
 //            }
-//            retryCount--;
 //        }
-//        if (rows == 0 && flag) {
-//            Long sendNum = customerServiceDetail.getSendNum();
-//            customerServiceDetail.setSendNum(sendNum + 1);
-//            customerServiceDetailMapper.updateCustomerServiceDetail(customerServiceDetail);
-////            throw new ServiceException("更新客服发送数量失败，请稍后重试");
-//        }
-        //客服总发+1
-        //        sendMsgObj.setProxy();
-        //拿出来手里的账号 如果满了再在redis里找是否有-1 有就可以发一条，没有就满了
-        //如果不满在redis里拿 如果有记录用记录 如果没有就用且存redis
-        //发一条 先 redis +1
-        //如果成功不管 如果不成功查redis是否存在 如果不存在加 -1
-        //定时任务 如果满了就存库
 
-        //胖哥要发图片的接口
+        redisCache.leftPush(sendNumKey, customerServiceDetail);
         return sendMsgObj;
     }
 
 
-    //发送成功逻辑
+    /**
+     * 发送成功逻辑
+     *
+     * @param sendMsgObj
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void getSendMsgSuccess(String taskContentId, String account) {
+    public void getSendMsgSuccess(SendMsgObj sendMsgObj) {
         //taskContentId：可能是任务id 可能是聊天记录id
+        String taskContentId = sendMsgObj.getId();
+        AccountInfo accountInfo = sendMsgObj.getAccountInfo();
+        String account = accountInfo.getCurrentNumber();
+        if (account.contains("+")) {
+            account = account.replace("+", "");
+        }
         TaskContent taskContent = taskContentMapper.selectTaskContentByTaskContentId(taskContentId);
-        if (Objects.isNull(taskContent)) {
+        if (Objects.isNull(taskContent)) { // 说明参数taskContentId是聊天记录id
             ChatRecord chatRecord = chatRecordMapper.selectChatRecordByChatId(taskContentId);
             SessionRecord sessionRecord = sessionRecordMapper.selectSessionRecordBySessionId(chatRecord.getSessionId());
-            //不是第一次会话 对话中
-//            SessionRecord sessionRecord = sessionRecordMapper.selectSessionRecordBySessionId(chatRecord1.getSessionId());
-//            SessionRecord sessionRecord1 = sessionRecords.get(0);
-//            ChatRecord chatRecord = chatRecordMapper.selectChatRecordEndBySessionId(sessionRecord1.getSessionId());
-//            if (!ObjectUtils.isEmpty(chatRecord)) {
-//                chatRecord.setSuccess(1L);
-//                chatRecordMapper.updateChatRecord(chatRecord);
-//            } else {
             String messageContent = chatRecord.getMessageContent();
             Date date = new Date();
-            sessionRecord.setLatestChatTime(date);
-            sessionRecord.setEndText(messageContent);
-            sessionRecord.setMessageType(1);
+            sessionRecord.setLatestChatTime(date); // 最后会话的时间
+            sessionRecord.setEndText(messageContent); // 会话的最后一句话
+            sessionRecord.setMessageType(1); // 1是我的会话、非群发
             sessionRecordMapper.updateSessionRecord(sessionRecord);
 //            }
             Long userId = sessionRecord.getCustId();
@@ -431,8 +452,8 @@ public class SendMsgServiceImpl implements ISendMsgService {
 
         //是否是第一次会话
         SessionRecord sessionRecord = new SessionRecord();
-        sessionRecord.setCustId(taskContent.getAssignedTo());
-        sessionRecord.setCustContact(taskContent.getRecipientList());
+        sessionRecord.setCustId(taskContent.getAssignedTo()); // 客服id
+        sessionRecord.setCustContact(taskContent.getRecipientList()); // 客户的联系方式
         List<SessionRecord> sessionRecords = sessionRecordMapper.selectSessionRecordList(sessionRecord);
 //        ChatRecord chatRecord1 = chatRecordMapper.selectChatRecordByChatId(taskContentId);
         if (sessionRecords.isEmpty()) {
@@ -457,7 +478,13 @@ public class SendMsgServiceImpl implements ISendMsgService {
             sessionRecord1.setMessageCount(0L);
             sessionRecord1.setMessageType(0);
             sessionRecord1.setProjectId(projectId);
-            sessionRecord1.setEndText(templateId);
+            String mediaUrl = accountInfo.getMediaUrl();
+            if (StringUtils.isNotBlank(mediaUrl)) {
+                sessionRecord1.setEndText("[图片]");
+            } else {
+                sessionRecord1.setEndText(templateId);
+            }
+
             sessionRecord1.setAccount(account);
             //修改回复次数
             //修改成功次数
@@ -472,24 +499,15 @@ public class SendMsgServiceImpl implements ISendMsgService {
             }
             ChatRecord chatRecord = new ChatRecord();
             chatRecord.setChatInout(-1L);
-            chatRecord.setMessageContent(templateId);
+            if (StringUtils.isBlank(mediaUrl)) {
+                chatRecord.setMessageContent(templateId);
+            } else {
+                chatRecord.setMessageContent(mediaUrl);
+            }
             chatRecord.setSendTime(date);
             chatRecord.setSessionId(sessionRecord1.getSessionId());
             chatRecord.setSuccess(1L);
             chatRecordMapper.insertChatRecord(chatRecord);
-            //CAS customerServiceDetail 的 SendNum
-            //TODO
-//            int rows = 0;
-//            int retryCount = 10; // 重试次数
-//            while (rows == 0 && retryCount > 0) {
-//                CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(assignedTo);
-//                Long successNum = customerServiceDetail.getSuccessNum();
-////            Long sendNum = customerServiceDetail.getSendNum();
-//                customerServiceDetail.setSuccessNum(successNum + 1);
-//                rows = customerServiceDetailMapper.updateCustomerServiceDetail(customerServiceDetail);
-//                retryCount--;
-//            }
-
 
             //判断是否还有没使用的任务 如果没有 就停止总任务
             TaskContent taskContent1 = new TaskContent();
@@ -506,7 +524,6 @@ public class SendMsgServiceImpl implements ISendMsgService {
                 task1.setTaskStatus(2L);
                 task1.setEndTime(date);
                 taskMapper.updateTask(task1);
-                redisCache.deleteObject(successNumKey);
 //                polErupt(customerServiceDetail);
             }
         }
@@ -546,12 +563,18 @@ public class SendMsgServiceImpl implements ISendMsgService {
     /**
      * 消息发送失败
      *
-     * @param taskContentId
+     * @param sendMsgObj
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void getSendMsgF(String taskContentId, String account) {
+    public void getSendMsgF(SendMsgObj sendMsgObj) {
         //先查是否是聊天记录表
+        String taskContentId = sendMsgObj.getId();
+        AccountInfo accountInfo = sendMsgObj.getAccountInfo();
+        String account = accountInfo.getCurrentNumber();
+        if (account.contains("+")) {
+            account = account.replace("+", "");
+        }
 //        ChatRecord chatRecord1 = chatRecordMapper.selectChatRecordByChatId(taskContentId);
         TaskContent taskContent = taskContentMapper.selectTaskContentByTaskContentId(taskContentId);
         SessionRecord sessionRecord = new SessionRecord();
@@ -594,29 +617,22 @@ public class SendMsgServiceImpl implements ISendMsgService {
             task1.setTaskStatus(2L);
             task1.setEndTime(new Date());
             taskMapper.updateTask(task1);
-//            Long assignedTo = taskContent.getAssignedTo();
-//            CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(assignedTo);
-//            polErupt(customerServiceDetail);
-        }
-//        CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(taskContent.getAssignedTo());
-//        Long sendNum = customerServiceDetail.getSendNum();
-//        customerServiceDetail.setSendNum(sendNum + 1);
-//        customerServiceDetailMapper.updateCustomerServiceDetail(customerServiceDetail);
-        TaskSendNum taskSendNum = taskSendNumMapper.selectTaskSendNumByTaskContentId(account);
-        //数据库没有 redis没有不管
-        //数据库没有 redis有 如果大于零 -1
-        Integer expire = redisCache.getCacheObject(accountNum + account);
-        if (ObjectUtils.isEmpty(taskSendNum)) {
-            if (!ObjectUtils.isEmpty(expire) && expire > 0) {
-                redisCache.subOne(accountNum + account);
-            }
-        } else {//数据库有
-            // redis没有 -1存redis
-            // redis有 如果大于零 -1
-            if (ObjectUtils.isEmpty(expire)) {
-                redisCache.setOne(accountNum + account, (int) (taskSendNum.getSendNum() - 1L));
-            } else if (expire > 0) {
-                redisCache.subOne(accountNum + account);
+            TaskSendNum taskSendNum = taskSendNumMapper.selectTaskSendNumByTaskContentId(account);
+            //数据库没有 redis没有不管
+            //数据库没有 redis有 如果大于零 -1
+            Integer expire = redisCache.getCacheObject(accountNum + account);
+            if (ObjectUtils.isEmpty(taskSendNum)) {
+                if (!ObjectUtils.isEmpty(expire) && expire > 0) {
+                    redisCache.subOne(accountNum + account);
+                }
+            } else {//数据库有
+                // redis没有 -1存redis
+                // redis有 如果大于零 -1
+                if (ObjectUtils.isEmpty(expire)) {
+                    redisCache.setOne(accountNum + account, (int) (taskSendNum.getSendNum() - 1L));
+                } else if (expire > 0) {
+                    redisCache.subOne(accountNum + account);
+                }
             }
         }
     }
@@ -651,11 +667,6 @@ public class SendMsgServiceImpl implements ISendMsgService {
             if (!ObjectUtils.isEmpty(assignedTo)) {
 //              synchronized (Lock) {
                 customerServiceDetailMapper.updateCustomerServiceDetailAddBanNum(assignedTo);
-//              CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(assignedTo);
-//              Long banNum = customerServiceDetail.getBanNum();
-//              customerServiceDetail.setBanNum(banNum + 1);
-//              customerServiceDetail.setSurplusNum(null);
-//              customerServiceDetailMapper.updateCustomerServiceDetail(customerServiceDetail);
             }
         }
     }
@@ -667,18 +678,17 @@ public class SendMsgServiceImpl implements ISendMsgService {
      * @return
      */
     @Override
-    public List<PhoneInfo> getPhoneInfos(int count) {
-        ArrayList<PhoneInfo> phoneInfos = new ArrayList<>();
+    public PhoneInfo getPhoneInfos(int count) {
         Boolean b = redisCache.hasKey(isReplyKey);
         if (b) {
             List<Object> objects = redisCache.dequeue(isReplyKey, count);
-            for (Object object : objects) {
-                JSONObject jsonObject = JSON.parseObject(object.toString());
-                jsonObject.remove("@type");
-                phoneInfos.add(JSON.toJavaObject(jsonObject, PhoneInfo.class));
-            }
+            Object object = objects.get(0);
+            JSONObject jsonObject = JSON.parseObject(object.toString());
+            jsonObject.remove("@type");
+            return JSON.toJavaObject(jsonObject, PhoneInfo.class);
+        } else {
+            throw new ServiceException();
         }
-        return phoneInfos;
     }
 
     /**
@@ -690,309 +700,304 @@ public class SendMsgServiceImpl implements ISendMsgService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer backMsgs(BackMsg backMsg) throws ParseException {
+        // 获取用户ID和回复消息列表
         Long userId = backMsg.getUserId();
-        ArrayList<MsgBoj> data = backMsg.getData();
-        int repeatNum = 0;
-        data.sort(Comparator.comparing(MsgBoj::getDate));
+        ArrayList<MsgBoj> data = backMsg.getReceive_result();
+        int repeatNum = 0; // 重复消息计数
         // 定义解析输入字符串的格式
-        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        inputFormat.setTimeZone(TimeZone.getTimeZone("UTC")); // 明确设置输入时间为UTC时区
+        SimpleDateFormat inputFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
+        inputFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
+        // 获取毫秒时间戳
+        for (MsgBoj datum : data) {
+            String from = datum.getFrom();
+            if (from.contains("+")) {
+                datum.setFrom(from.replace("+", ""));
+            }
+            datum.setDate(Long.parseLong(datum.getDate_sent()));
+        }
+        data.sort(Comparator.comparing(MsgBoj::getDate_sent));
         SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         outputFormat.setTimeZone(TimeZone.getTimeZone("GMT+8")); // 设置为东八区
+
+        // 遍历所有回复消息
         for (MsgBoj datum : data) {
-            String contactValue = datum.getContact_value();
-            if (!isNumericByRegex(contactValue)) {
-                //过滤掉不是纯数字的手机号的消息 这里应该解决了没有发消息收到了系统消息的问题
-                continue;
-            }
+//            String contactValue = datum.getContact_value();
+//            if (!isNumericByRegex(contactValue)) {
+//                //过滤掉不是纯数字的手机号的消息 这里应该解决了没有发消息收到了系统消息的问题
+//                continue;
+//            }
             /** 如果需要转时区 就用这里
              Instant instant = Instant.parse(datum.getDate());  // 直接解析 UTC 时间
              Date localDate = Date.from(instant);
              **/
             //OO时间直接落库 不做处理
-            Date dateZ = inputFormat.parse(datum.getDate());
+            // UTC时间转换成东八区时间
+            Date dateZ = new Date(Long.parseLong(datum.getDate_sent())); // 秒转毫秒
             String beijingTime = outputFormat.format(dateZ);
             Date date = outputFormat.parse(beijingTime);
-            Long id = datum.getId();
+
+            Long id = datum.getId(); // 该消息的唯一标识，可以是收到消息的时间戳
             ChatRecord chatRecord1 = new ChatRecord();
-            if (Objects.isNull(id)) {
+            if (Objects.isNull(id)) { // 若id为空
                 chatRecord1.setSendTime(date);
-                chatRecord1.setMessageContent(datum.getMessage());
-                chatRecord1.setChatInout(1L);
+                chatRecord1.setMessageContent(datum.getBody());
+                chatRecord1.setChatInout(1L); // 消息方向：1表示接收、-1是发出
             } else {
-                chatRecord1.setId(id.toString());
+                chatRecord1.setId(id);
             }
 
-            //先去重
+            //先去重（通过消息的时间和内容进行去重）
             List<ChatRecord> chatRecords2 = chatRecordMapper.selectChatRecordList(chatRecord1);
             if (!chatRecords2.isEmpty()) {
                 repeatNum += chatRecords2.size();
                 continue;
             }
-//            accounts.add(account);
-
             SessionRecord sessionRecord = new SessionRecord();
-            sessionRecord.setCustContact(datum.getContact_value());
+            sessionRecord.setCustContact(datum.getFrom());
             sessionRecord.setCustId(userId);//一个手机 一个用户id  确定一个对话
             List<SessionRecord> sessionRecordOne = sessionRecordMapper.selectSessionRecordList(sessionRecord);
-            if (ObjectUtils.isEmpty(sessionRecordOne)) {
-                //这里因为可能没有调用发送成功或者没有状态，但是确实发出去了，他回信了就直接给他重新走一遍发送成功
-                TaskContent taskContent = taskContentMapper.selectTaskContentByCust(datum.getContact_value());
-                if (Objects.nonNull(taskContent) && taskContent.getIsUse().equals(1L)) {
-                    //如果有这个任务并且被使用 需要重新走发送成功逻辑
-                    getSendMsgSuccess(taskContent.getTaskContentId(), datum.getUsername());
-                } else {
-                    log.info("应该是删除的任务，没有被记录成功，结果发成功了也回了消息");
-                    continue;
-                }
-            }
-            List<SessionRecord> reSessionRecordOne = sessionRecordMapper.selectSessionRecordList(sessionRecord);
-            if (!ObjectUtils.isEmpty(reSessionRecordOne)) {
+//            if (ObjectUtils.isEmpty(sessionRecordOne)) {
+            //这里因为可能没有调用发送成功或者没有状态，但是确实发出去了，他回信了就直接给他重新走一遍发送成功
+//                TaskContent taskContent = taskContentMapper.selectTaskContentByCust(datum.getFrom());
+//                if (Objects.nonNull(taskContent) && taskContent.getIsUse().equals(1L)) {
+//                    //如果有这个任务并且被使用 需要重新走发送成功逻辑
+//                    getSendMsgSuccess(taskContent.getTaskContentId(), datum.getTo());
+//                } else {
+//                    log.info("应该是删除的任务，没有被记录成功，结果发成功了也回了消息");
+//                    continue;
+//                }
+//            }
+//            List<SessionRecord> reSessionRecordOne = sessionRecordMapper.selectSessionRecordList(sessionRecord);
+            if (!ObjectUtils.isEmpty(sessionRecordOne)) {
                 //添加聊天记录
-                for (SessionRecord sessionRecord1 : reSessionRecordOne) {
-//                    SessionRecord sessionRecord1 = reSessionRecordOne.get(0);
+                SessionRecord sessionRecord1 = sessionRecordOne.get(0);
 
-                    //修改会话状态
-                    sessionRecord1.setLatestChatTime(date);
-                    sessionRecord1.setMessageCount(sessionRecord1.getMessageCount() + 1);
-                    sessionRecord1.setMessageType(1);
-                    sessionRecord1.setEndText(datum.getMessage());
-                    sessionRecordMapper.updateSessionRecord(sessionRecord1);
+                //修改会话状态
+                sessionRecord1.setLatestChatTime(date);
+                sessionRecord1.setMessageCount(sessionRecord1.getMessageCount() + 1);
+                sessionRecord1.setMessageType(1);
+                sessionRecord1.setEndText(datum.getBody());
+                sessionRecordMapper.updateSessionRecord(sessionRecord1);
 
-                    //根据sessionId找chatrecord 如果有chat_inout 有1就回复率+1
-                    ChatRecord chatRecord2 = new ChatRecord();
-                    chatRecord2.setSessionId(sessionRecord1.getSessionId());
-                    chatRecord2.setChatInout(1L);
-                    List<ChatRecord> chatRecords = chatRecordMapper.selectChatRecordList(chatRecord2);
-                    if (chatRecords.isEmpty()) {
-                        CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(userId);
-                        //就一个逻辑 回复数量+1
-                        redisCache.leftPush(replyNumKey, customerServiceDetail);
-                    }
-
-                    ChatRecord chatRecord = new ChatRecord();
-                    if (Objects.nonNull(id)) {
-                        chatRecord.setId(id.toString());
-                    }
-                    chatRecord.setChatInout(1L);
-                    chatRecord.setMessageContent(datum.getMessage());
-                    chatRecord.setSendTime(date);
-                    chatRecord.setSessionId(sessionRecord1.getSessionId());
-                    chatRecord.setSuccess(1L);
-                    try {
-                        chatRecordMapper.insertChatRecord(chatRecord);
-                    } catch (Exception e) {
-                        log.info("是否消息-时间唯一索引错误了");
-                        log.info(e.getMessage());
-                    }
-
-                    //推redis
-                    //推送websocket
-                    //组装消息
-                    JSONObject jsonObject = assembleBackMsg(sessionRecord1, chatRecord);
-                    HashMap<Long, Session> userSessionMap = WebSocketService.userSessionMap;
-                    Session session = userSessionMap.get(userId);
-                    WebSocketService.SendMessage(session, jsonObject.toString());
+                //根据sessionId找chatrecord 如果有chat_inout 有1就回复率+1
+                ChatRecord chatRecord2 = new ChatRecord();
+                chatRecord2.setSessionId(sessionRecord1.getSessionId());
+                chatRecord2.setChatInout(1L);
+                List<ChatRecord> chatRecords = chatRecordMapper.selectChatRecordList(chatRecord2);
+                if (chatRecords.isEmpty()) {
+                    CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(userId);
+                    //就一个逻辑 回复数量+1
+                    redisCache.leftPush(replyNumKey, customerServiceDetail);
                 }
-//                    int rows = 0;
-//                    int retryCount = 5; // 重试次数
-//                    //就一个逻辑 回复数量+1
-//                    while (rows == 0 && retryCount > 0) {
-//                        CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(userId);
-//                        customerServiceDetail.setReplyNum(customerServiceDetail.getReplyNum() + 1);
-//                        rows = customerServiceDetailMapper.updateCustomerServiceDetail(customerServiceDetail);
-//                        if (rows != 0) {
-//                            ChatRecord chatRecord = new ChatRecord();
-////                chatRecord.setChatId(datum.getId().toString());
-//                            chatRecord.setChatInout(1L);
-//                            chatRecord.setMessageContent(datum.getMessage());
-//
-//                            chatRecord.setSendTime(date);
-//                            chatRecord.setSessionId(sessionRecord1.getSessionId());
-//                            chatRecord.setSuccess(1L);
-//                            chatRecord.setId(id);
-//                            chatRecordMapper.insertChatRecord(chatRecord);
-//                            //修改会话状态
-//                            sessionRecord1.setLatestChatTime(date);
-//                            sessionRecord1.setMessageCount(sessionRecord1.getMessageCount() + 1);
-//                            sessionRecord1.setMessageType(1);
-//                            sessionRecord1.setEndText(datum.getMessage());
-//                            sessionRecordMapper.updateSessionRecord(sessionRecord1);
-//
-//                            //推redis
-//                            //推送websocket
-//                            //组装消息
-//                            JSONObject jsonObject = assembleBackMsg(sessionRecord1, chatRecord);
-//                            HashMap<Long, Session> userSessionMap = WebSocketService.userSessionMap;
-//                            Session session = userSessionMap.get(userId);
-//                            WebSocketService.SendMessage(session, jsonObject.toString());
-//                        }
-//                        retryCount--;
-//                    }
-//                ChatRecord chatRecord = new ChatRecord();
-////                chatRecord.setChatId(datum.getId().toString());
-//                chatRecord.setChatInout(1L);
-//                chatRecord.setMessageContent(datum.getMessage());
-//
-//                chatRecord.setSendTime(date);
-//                chatRecord.setSessionId(sessionRecord1.getSessionId());
-//                chatRecord.setSuccess(1L);
-//                chatRecord.setId(id);
-//                chatRecordMapper.insertChatRecord(chatRecord);
-//                //修改会话状态
-//                sessionRecord1.setLatestChatTime(date);
-//                sessionRecord1.setMessageCount(sessionRecord1.getMessageCount() + 1);
-//                sessionRecord1.setMessageType(1);
-//                sessionRecord1.setEndText(datum.getMessage());
-//                sessionRecordMapper.updateSessionRecord(sessionRecord1);
-//                //推送websocket
-//                //组装消息
-//                JSONObject jsonObject = assembleBackMsg(sessionRecord1, chatRecord);
-//                HashMap<Long, Session> userSessionMap = WebSocketService.userSessionMap;
-//                Session session = userSessionMap.get(userId);
-//                WebSocketService.SendMessage(session, jsonObject.toString());
+
+                ChatRecord chatRecord = new ChatRecord();
+                chatRecord.setId(id);
+                chatRecord.setChatInout(1L);
+                chatRecord.setMessageContent(datum.getBody());
+                chatRecord.setSendTime(date);
+                chatRecord.setSessionId(sessionRecord1.getSessionId());
+                chatRecord.setSuccess(1L);
+                try {
+                    chatRecordMapper.insertChatRecord(chatRecord);
+                } catch (Exception e) {
+                    log.info("是否消息-时间唯一索引错误了");
+                    log.info(e.getMessage());
+                }
+
+                //推redis
+                //推送websocket
+                //组装消息
+                JSONObject jsonObject = assembleBackMsg(sessionRecord1, chatRecord);
+                HashMap<Long, Session> userSessionMap = WebSocketService.userSessionMap;
+                Session session = userSessionMap.get(userId);
+                WebSocketService.SendMessage(session, jsonObject.toString());
+
+                // todo 从char_record中获取全部对应session_id相同的对话，获得一个List<CharRecord>
+                // todo async 调用ai的api new thread run， 将ai的回复msg 调用websocket的sendMessage
             }
         }
         return repeatNum;
     }
 
     @Override
-    public List<PhoneInfo> checkBan(Integer count) {
+    public PhoneInfo checkBan(Integer count) {
         List<Object> objects = redisCache.dequeue(noAssInRedis, count);
-        ArrayList<PhoneInfo> phoneInfos = new ArrayList<>();
-        for (Object object : objects) {
-            JSONObject jsonObject = JSON.parseObject(object.toString());
-            jsonObject.remove("@type");
-            phoneInfos.add(JSON.toJavaObject(jsonObject, PhoneInfo.class));
-        }
-        return phoneInfos;
+        Object object = objects.get(0);
+        JSONObject jsonObject = JSON.parseObject(object.toString());
+        jsonObject.remove("@type");
+        return JSON.toJavaObject(jsonObject, PhoneInfo.class);
     }
 
     @Override
     public void deleteSys() {
-        /**
-         * 清空系统数据
-         * task_send_Num
-         * task_content
-         * task
-         * sys_user
-         * sys_user_role
-         * session_record
-         * send content template content
-         * send content template
-         * preset reply
-         * customer service detail
-         * customer account
-         * chat record
-         * accounts
-         */
         customerServiceDetailMapper.deleteSysAll();
     }
 
+    /**
+     * {
+     * SmsMessageSid=SMIawFONvV2Hz8QnAGnY~RTnQ==,
+     * NumMedia=0,
+     * SmsSid=SMIawFONvV2Hz8QnAGnY~RTnQ==,
+     * SmsStatus=received,
+     * Body=789,//消息内容
+     * To=+19382040350,//这个人收的
+     * NumSegments=1,
+     * MessageSid=SMIawFONvV2Hz8QnAGnY~RTnQ==,
+     * AccountSid=B8OADeAAaRrccBNpxWkbvA==,
+     * From=+14128866042,//这个人发的
+     * ApiVersion=2010-04-01
+     * }
+     *
+     * @param jsonResult
+     */
     @Override
-    public void setToken(String userName, String token) {
-        String tokenKey = CacheConstants.Token;
-        redisCache.setCacheObject(tokenKey + userName, token, 48, TimeUnit.HOURS);
-    }
-
-    @Override
-    public String getToken(String userName) {
-        String tokenKey = CacheConstants.Token;
-        Object cacheObject = redisCache.getCacheObject(tokenKey + userName);
-        if (Objects.isNull(cacheObject)) {
-            return null;
-        } else {
-            return cacheObject.toString();
+    public void reBack(com.alibaba.fastjson2.JSONObject jsonResult) {
+        String body = jsonResult.get("Body").toString();//消息
+        String to = jsonResult.get("To").toString().replace("+", "");//我们的account
+        String from = jsonResult.get("From").toString().replace("+", "");//目标客户
+        Object isImg = jsonResult.get("MediaUrl0");
+        boolean img = false;
+        if (Objects.nonNull(isImg) && isImg.toString().contains("https://api.textgrid.com")) {
+            //是图片
+            body = isImg.toString();
+            img = true;
         }
-    }
+        Date date = new Date();
+        Long id = date.getTime();
+        Long userId = 0L;
 
-    @Override
-    public void reBack(CallBackObj jsonList) {
-        jsonList.getMsgMap().sort(Comparator.comparingLong(CallBackItem::getTimestamp));
-        String to = jsonList.getTo();
-        String from = jsonList.getFrom();
-        for (CallBackItem jsonResult : jsonList.getMsgMap()) {
-            String body = jsonResult.getBody();//消息
-            String id = jsonResult.getId();
-            Date date = new Date(jsonResult.getTimestamp());
-            Long userId = 0L;
-
-            ChatRecord chatRecord1 = new ChatRecord();
-            chatRecord1.setId(id);
-            //先去重
-            List<ChatRecord> chatRecords2 = chatRecordMapper.selectChatRecordList(chatRecord1);
-            if (!chatRecords2.isEmpty()) {
-                continue;
-            }
-
-            SessionRecord sessionRecord = new SessionRecord();
-            sessionRecord.setCustContact(from);
+        SessionRecord sessionRecord = new SessionRecord();
+        sessionRecord.setCustContact(from);
 //        sessionRecord.setCustId(userId);//一个手机 一个用户id  确定一个对话
-            sessionRecord.setAccount(to);
-            List<SessionRecord> sessionRecordOne = sessionRecordMapper.selectSessionRecordList(sessionRecord);
-            if (!ObjectUtils.isEmpty(sessionRecordOne)) {
-                //添加聊天记录
-                for (SessionRecord record : sessionRecordOne) {
-                    //修改会话状态
-                    userId = record.getCustId();
-                    record.setLatestChatTime(date);
-                    record.setMessageCount(record.getMessageCount() + 1);
-                    record.setMessageType(1);
+        sessionRecord.setAccount(to);
+        List<SessionRecord> sessionRecordOne = sessionRecordMapper.selectSessionRecordList(sessionRecord);
+        if (!ObjectUtils.isEmpty(sessionRecordOne)) {
+            //添加聊天记录
+            for (SessionRecord record : sessionRecordOne) {
+//                SessionRecord sessionRecord1 = sessionRecordOne.get(0);
+                //修改会话状态
+                userId = record.getCustId();
+                record.setLatestChatTime(date);
+                record.setMessageCount(record.getMessageCount() + 1);
+                record.setMessageType(1);
+                if (img) {
+                    record.setEndText("[图片]");
+                } else {
                     record.setEndText(body);
-                    sessionRecordMapper.updateSessionRecord(record);
-                    //根据sessionId找chatrecord 如果有chat_inout 有1就回复率+1
-                    ChatRecord chatRecord2 = new ChatRecord();
-                    chatRecord2.setSessionId(record.getSessionId());
-                    chatRecord2.setChatInout(1L);
-                    List<ChatRecord> chatRecords = chatRecordMapper.selectChatRecordList(chatRecord2);
-                    if (chatRecords.isEmpty()) {
-                        CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(userId);
-                        //就一个逻辑 回复数量+1
-                        redisCache.leftPush(replyNumKey, customerServiceDetail);
-                    }
-                    ChatRecord chatRecord = new ChatRecord();
-                    chatRecord.setId(id);
-                    chatRecord.setChatInout(1L);
-                    chatRecord.setMessageContent(body);
-                    chatRecord.setSendTime(date);
-                    chatRecord.setSessionId(record.getSessionId());
-                    chatRecord.setSuccess(1L);
-                    try {
-                        chatRecordMapper.insertChatRecord(chatRecord);
-                    } catch (Exception e) {
-                        log.info("是否消息-时间唯一索引错误了");
-                        log.info(e.getMessage());
-                    }
-                    //推redis
-                    //推送websocket
-                    //组装消息
-                    JSONObject jsonObject = assembleBackMsg(record, chatRecord);
-                    HashMap<Long, Session> userSessionMap = WebSocketService.userSessionMap;
-                    Session session = userSessionMap.get(userId);
-                    WebSocketService.SendMessage(session, jsonObject.toString());
                 }
-//                customerServiceDetailMapper.updateCustomerServiceDetailSub(userId);
+                sessionRecordMapper.updateSessionRecord(record);
+                //根据sessionId找chatrecord 如果有chat_inout 有1就回复率+1
+                ChatRecord chatRecord2 = new ChatRecord();
+                chatRecord2.setSessionId(record.getSessionId());
+                chatRecord2.setChatInout(1L);
+                List<ChatRecord> chatRecords = chatRecordMapper.selectChatRecordList(chatRecord2);
+                if (chatRecords.isEmpty()) {
+                    CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(userId);
+                    //就一个逻辑 回复数量+1
+                    redisCache.leftPush(replyNumKey, customerServiceDetail);
+                }
+                ChatRecord chatRecord = new ChatRecord();
+                chatRecord.setId(id);
+                chatRecord.setChatInout(1L);
+                chatRecord.setMessageContent(body);
+                chatRecord.setSendTime(date);
+                chatRecord.setSessionId(record.getSessionId());
+                chatRecord.setSuccess(1L);
+                try {
+                    chatRecordMapper.insertChatRecord(chatRecord);
+                } catch (Exception e) {
+                    log.info("是否消息-时间唯一索引错误了");
+                    log.info(e.getMessage());
+                }
+                //推redis
+                //推送websocket
+                //组装消息
+                JSONObject jsonObject = assembleBackMsg(record, chatRecord);
+                HashMap<Long, Session> userSessionMap = WebSocketService.userSessionMap;
+                Session session = userSessionMap.get(userId);
+                WebSocketService.SendMessage(session, jsonObject.toString());
             }
+            customerServiceDetailMapper.updateCustomerServiceDetailSub(userId);
         }
     }
 
     @Override
-    public ArrayList<Long> uploadAccount(Accounts accounts) {
-        //todo 这里的所属项目需要后期接口传递
-        String account = accounts.getAccount();
-        Accounts accounts1 = accountsMapper.selectAccountsByAccount(account);
-        if (Objects.nonNull(accounts1)) {
-            Long assignedTo = accounts1.getAssignedTo();
-            if (Objects.isNull(assignedTo)) {
-                throw new ServiceException("该账号未绑定");
+    public Object accountBinding() {
+        String scriptBinding = CacheConstants.SCRIPTBINDING;
+        List<Object> objects = redisCache.popFromSet(scriptBinding, 1);
+        if (objects.isEmpty()) {
+            throw new ServiceException("无需绑定");
+        }
+        return objects.get(0);
+    }
+
+    @Override
+    public void reBack2(ReBack2 reBack2) {
+        Object[] sms = reBack2.getSms();
+        ArrayList<Object> sms1 = (ArrayList<Object>) sms[0];
+        if (Integer.parseInt(sms1.get(0).toString()) != 0) {
+            return;
+        }
+        Long dateLong = Long.parseLong(sms1.get(2).toString());//时间戳
+        String bodyBase64 = sms1.get(5).toString();//消息
+        byte[] decodedBytes = Base64.getDecoder().decode(bodyBase64);
+        // 按UTF-8转成字符串
+        String body = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8).split("\r\n\r\n")[1];
+        String to = sms1.get(4).toString();//我们的account
+        String from = sms1.get(3).toString();//目标客户
+        Date date = new Date(dateLong);
+        Long id = date.getTime();
+        Long userId = 0L;
+
+        SessionRecord sessionRecord = new SessionRecord();
+        sessionRecord.setCustContact(from);
+//        sessionRecord.setCustId(userId);//一个手机 一个用户id  确定一个对话
+        sessionRecord.setAccount(to);
+        List<SessionRecord> sessionRecordOne = sessionRecordMapper.selectSessionRecordList(sessionRecord);
+        if (!ObjectUtils.isEmpty(sessionRecordOne)) {
+            //添加聊天记录
+            for (SessionRecord record : sessionRecordOne) {
+//                SessionRecord sessionRecord1 = sessionRecordOne.get(0);
+                //修改会话状态
+                userId = record.getCustId();
+                record.setLatestChatTime(date);
+                record.setMessageCount(record.getMessageCount() + 1);
+                record.setMessageType(1);
+                record.setEndText(body);
+                sessionRecordMapper.updateSessionRecord(record);
+                //根据sessionId找chatrecord 如果有chat_inout 有1就回复率+1
+                ChatRecord chatRecord2 = new ChatRecord();
+                chatRecord2.setSessionId(record.getSessionId());
+                chatRecord2.setChatInout(1L);
+                List<ChatRecord> chatRecords = chatRecordMapper.selectChatRecordList(chatRecord2);
+                if (chatRecords.isEmpty()) {
+                    CustomerServiceDetail customerServiceDetail = customerServiceDetailMapper.selectCustomerDetailByUserId(userId);
+                    //就一个逻辑 回复数量+1
+                    redisCache.leftPush(replyNumKey, customerServiceDetail);
+                }
+                ChatRecord chatRecord = new ChatRecord();
+                chatRecord.setId(id);
+                chatRecord.setChatInout(1L);
+                chatRecord.setMessageContent(body);
+                chatRecord.setSendTime(date);
+                chatRecord.setSessionId(record.getSessionId());
+                chatRecord.setSuccess(1L);
+                try {
+                    chatRecordMapper.insertChatRecord(chatRecord);
+                } catch (Exception e) {
+                    log.info("是否消息-时间唯一索引错误了");
+                    log.info(e.getMessage());
+                }
+                //推redis
+                //推送websocket
+                //组装消息
+                JSONObject jsonObject = assembleBackMsg(record, chatRecord);
+                HashMap<Long, Session> userSessionMap = WebSocketService.userSessionMap;
+                Session session = userSessionMap.get(userId);
+                WebSocketService.SendMessage(session, jsonObject.toString());
             }
-            return new ArrayList<>(Arrays.asList(assignedTo));
-        }else {
-            accounts.setProjectId("28e9dd50bf484269ad4ad4af0094d247");
-            accounts.setCreateTime(new Date());
-            accountsMapper.insertAccounts(accounts);
-            throw new ServiceException("首次上报成功",201);
+            customerServiceDetailMapper.updateCustomerServiceDetailSub(userId);
         }
     }
 
@@ -1010,6 +1015,40 @@ public class SendMsgServiceImpl implements ISendMsgService {
         } catch (Exception e) {
             System.err.println("Error reading the file: " + e.getMessage());
             return null;
+        }
+    }
+
+
+    //暂停任务
+    public void suspendTask(String taskId, CustomerServiceDetail customerServiceDetail) {
+        if (customerServiceDetail.getManagerId().equals(-1L)) {
+            //组长暂停
+            Task task = new Task();
+            task.setTaskId(taskId);
+            task.setTaskStatus(0L);
+            int i = taskMapper.updateTask(task);
+            taskContentMapper.updateTaskContent4pausedTask(taskId);
+            if (i <= 0) {
+                throw new ServiceException("未知错误，请联系管理员");
+            }
+        } else {
+            //个人暂停
+            TaskContent taskContentAll = new TaskContent();
+            taskContentAll.setTaskId(taskId);
+            int allNum = taskContentMapper.selectCount(taskContentAll);
+
+            TaskContent taskContentOne = new TaskContent();
+            taskContentOne.setTaskId(taskId);
+            taskContentOne.setAssignedTo(customerServiceDetail.getUserId());
+            int OneNum = taskContentMapper.selectCount(taskContentOne);
+            if (OneNum >= allNum) {
+                //改变任务状态
+                Task task = new Task();
+                task.setTaskId(taskId);
+                task.setTaskStatus(0L);
+                int i = taskMapper.updateTask(task);
+            }
+            taskContentMapper.updateTaskContent4pausedOnesTask(taskId, customerServiceDetail.getUserId());
         }
     }
     //补齐并发发送数量的问题 兜底

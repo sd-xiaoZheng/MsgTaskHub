@@ -67,5 +67,5 @@ public interface ITaskContentService
 
     int removeByUserId(DeleteTaskVo userId);
 
-    List<TaskContent> selectTaskContentList4Export(Long userId);
+    List<TaskContent> selectTaskContentList4Export(Long userId,Long status);
 }

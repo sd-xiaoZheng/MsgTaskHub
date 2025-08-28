@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.chat.ruoyichat.domain.SessionRecord;
+import com.chat.ruoyichat.mapper.CustomerServiceDetailMapper;
 import com.chat.ruoyichat.mapper.SessionRecordMapper;
 import com.ruoyi.common.utils.uuid.IdUtils;
 import io.netty.util.internal.ObjectUtil;
@@ -27,6 +28,8 @@ public class ChatRecordServiceImpl implements IChatRecordService
     private ChatRecordMapper chatRecordMapper;
     @Autowired
     private SessionRecordMapper sessionRecordMapper;
+    @Autowired
+    private CustomerServiceDetailMapper customerServiceDetailMapper;
     /**
      * 查询聊天记录，用于存储聊天记录相关信息
      * 
@@ -105,5 +108,22 @@ public class ChatRecordServiceImpl implements IChatRecordService
     public int deleteChatRecordByChatId(String chatId)
     {
         return chatRecordMapper.deleteChatRecordByChatId(chatId);
+    }
+
+    /**
+     * 对ai单句回复的打分的入库
+     * <p>
+     * 1. 检查组长是否开启ai回复功能<br>
+     * 2. 检查该字段是否是ai回复的<br>
+     * 3. 检查是否已经打过分<br>
+     * 4. 然后分数入库
+     *
+     * @param chatRecord 包含chat_id（聊天记录唯一标识）与score（评分）
+     */
+    @Override
+    public void aiscore(ChatRecord chatRecord) {
+        Long chatId = chatRecord.getChatId();
+        Integer score = chatRecord.getAiScore();
+        // todo 具体业务逻辑
     }
 }

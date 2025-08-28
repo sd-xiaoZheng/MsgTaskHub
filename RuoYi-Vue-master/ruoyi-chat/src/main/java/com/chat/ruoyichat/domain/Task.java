@@ -95,6 +95,12 @@ public class Task extends BaseEntity {
     @Excel(name = "删除标志")
     private Long delFlag;
 
+    /**
+     * 是否是图片1是图片任务
+     */
+    @Excel(name = "删除标志")
+    private Long isImg;
+
 
     public Task(String projectId, String taskName,Long taskType,Long groupId,Long taskNum) {
         this.taskName = taskName;

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chat.ruoyichat.mapper.TaskImgMapper">
+
+    <resultMap type="TaskImg" id="TaskImgResult">
+        <result property="id"    column="id"    />
+        <result property="userId"    column="user_id"    />
+        <result property="path"    column="path"    />
+        <result property="projectId"    column="project_id"    />
+        <result property="imgAct"    column="img_act"    />
+    </resultMap>
+
+    <sql id="selectTaskImgVo">
+        select id, user_id, path, project_id,img_act from task_img
+    </sql>
+
+    <select id="selectTaskImgList" parameterType="TaskImg" resultMap="TaskImgResult">
+        <include refid="selectTaskImgVo"/>
+        <where>
+            <if test="userId != null "> and user_id = #{userId}</if>
+            <if test="path != null  and path != ''"> and path = #{path}</if>
+            <if test="projectId != null  and projectId != ''"> and project_id = #{projectId}</if>
+            <if test="imgAct != null  and imgAct != ''"> and img_act = #{imgAct}</if>
+        </where>
+    </select>
+
+    <select id="selectTaskImgById" parameterType="Long" resultMap="TaskImgResult">
+        <include refid="selectTaskImgVo"/>
+        where id = #{id}
+    </select>
+
+    <insert id="insertTaskImg" parameterType="TaskImg">
+        insert into task_img
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id != null">id,</if>
+            <if test="userId != null">user_id,</if>
+            <if test="path != null">path,</if>
+            <if test="projectId != null">project_id,</if>
+            <if test="imgAct != null">img_act,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="id != null">#{id},</if>
+            <if test="userId != null">#{userId},</if>
+            <if test="path != null">#{path},</if>
+            <if test="projectId != null">#{projectId},</if>
+            <if test="imgAct != null">#{imgAct},</if>
+         </trim>
+    </insert>
+
+    <update id="updateTaskImg" parameterType="TaskImg">
+        update task_img
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="path != null">path = #{path},</if>
+            <if test="projectId != null">project_id = #{projectId},</if>
+            <if test="imgAct != null">img_act = #{imgAct},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteTaskImgById" parameterType="Long">
+        delete from task_img where id = #{id}
+    </delete>
+
+    <delete id="deleteTaskImgByIds" parameterType="String">
+        delete from task_img where id in
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <delete id="deleteTaskImgByuserId">
+        delete from task_img where user_id = #{userId}
+    </delete>
+
+    <select id="selectTaskImgByUserId" resultMap="TaskImgResult">
+        <include refid="selectTaskImgVo"/>
+        where user_id=#{userId}
+    </select>
+
+    <select id="selectTaskImgsByUserId" resultMap="TaskImgResult">
+        <include refid="selectTaskImgVo"/>
+        where user_id=#{userId}
+    </select>
+
+    <delete id="deleteTaskImgByNoProjectId">
+        delete from task_img where project_id is null
+    </delete>
+
+    <select id="selectTaskImgAvatar" resultMap="TaskImgResult">
+        <include refid="selectTaskImgVo"/>
+         where img_act = 1
+    </select>
+
+    <select id="randOneByUserId">
+        SELECT * FROM (select * from task_img where user_id = #{userId}) AS temp_table
+        ORDER BY RAND()
+        LIMIT 1;
+    </select>
+
+    <delete id="deleteTaskImgByuserIdAndAct">
+        delete from task_img where user_id = #{userId} and img_act = #{imgAct}
+    </delete>
+
+    <select id="selectTaskImgAvatarByAct" resultMap="TaskImgResult">
+        <include refid="selectTaskImgVo"/>
+        where img_act = #{act}
+    </select>
+</mapper>

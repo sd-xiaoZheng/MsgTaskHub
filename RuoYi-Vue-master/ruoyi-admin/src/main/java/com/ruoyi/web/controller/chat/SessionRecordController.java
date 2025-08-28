@@ -26,7 +26,7 @@ import com.ruoyi.common.core.page.TableDataInfo;
 
 /**
  * 会话记录，用于存储会话记录相关信息Controller
- * 
+ *
  * @author ruoyi
  * @date 2025-03-04
  */
@@ -186,4 +186,19 @@ public class SessionRecordController extends BaseController
         JSONObject unreadNum = sessionRecordService.sessionUnread(userId);
         return AjaxResult.success(unreadNum);
     }
+
+    /**
+     * 对ai会话的打分
+     * @param sessionRecord 包含会话id（sessionId）和分数（score）
+     * @return {@code AjaxResult}
+     */
+    // todo 对ai会话的打分
+    @Log(title = "对ai会话的打分", businessType = BusinessType.UPDATE)
+    @PutMapping("/aiscore")
+    public AjaxResult aiscore(SessionRecord sessionRecord) {
+        sessionRecordService.aiscore(sessionRecord);
+        return AjaxResult.success("ai会话打分保存成功");
+    }
+
+    // todo 准备给ai提供打分相关数据（未定）
 }

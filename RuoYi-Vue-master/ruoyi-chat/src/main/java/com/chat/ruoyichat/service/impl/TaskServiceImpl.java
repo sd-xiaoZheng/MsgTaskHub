@@ -267,6 +267,14 @@ public class TaskServiceImpl implements ITaskService {
             throw new ServiceException("空文件(empty file)");
         }
 
+        if (StringUtils.isNotEmpty(isBoth) && isBoth.equals("2")) {
+            //走这里就是上传图片，只需要上传手机号就可以了，图片另外上传
+            int size = remove.size();
+            if (size > 1) {
+                throw new ServerException("上传文件格式错误");
+            }
+        }
+
         //如果任务名称没有就随机
         if (ObjectUtils.isEmpty(taskName)) {
             taskName = SecurityUtils.getUsername() + "_" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
@@ -342,7 +350,7 @@ public class TaskServiceImpl implements ITaskService {
                     String content = phoneContentInfo.getContent();
                     taskContents.add(new TaskContent(task.getTaskId(), phone, content, null, 0));
                 }
-            } else {
+            } else if (StringUtils.isNotEmpty(isBoth) && isBoth.equals("0")) {
                 //一定不是手机号+话术 只允许有手机号
                 if (remove.size() > 1) {
                     throw new ServiceException("只允许有一列数据（联系号）(Only one column of data (contact number) is allowed.)");
@@ -377,6 +385,11 @@ public class TaskServiceImpl implements ITaskService {
 
                     contentTemplateContentMapper.updateSendContentTemplateContent2IsUseBatch(sendContentTemplateContents);
                 }
+            } else if (StringUtils.isNotEmpty(isBoth) && isBoth.equals("2")) {
+                for (String phoneNum : phoneStrList) {
+                    taskContents.add(new TaskContent(task.getTaskId(), phoneNum, null, customerServiceDetail.getUserId(), 0));
+                }
+                task.setIsImg(1L);
             }
             taskContentMapper.insertTaskContentBatch(taskContents);
             taskMapper.insertTask(task);
@@ -466,7 +479,7 @@ public class TaskServiceImpl implements ITaskService {
                     String content = phoneContentInfo.getContent();
                     taskContents.add(new TaskContent(task.getTaskId(), phone, content, customerServiceDetail.getUserId(), 0));
                 }
-            } else {
+            } else if (StringUtils.isNotEmpty(isBoth) && isBoth.equals("0")) {
                 //一定不是手机号+话术 只允许有手机号
                 if (remove.size() > 1) {
                     throw new ServiceException("只允许有一列数据（联系号）(Only one column of data (contact number) is allowed.)");
@@ -500,6 +513,12 @@ public class TaskServiceImpl implements ITaskService {
                     ArrayList<SendContentTemplateContent> sendContentTemplateContents = addContentTextWithOne(phoneStrList, taskContents, task, ReplyStr, customerServiceDetail);
                     contentTemplateContentMapper.updateSendContentTemplateContent2IsUseBatch(sendContentTemplateContents);
                 }
+            } else if (StringUtils.isNotEmpty(isBoth) && isBoth.equals("2")) {
+                //到这里是发图片 只上传手机号就好
+                for (String phoneNum : phoneStrList) {
+                    taskContents.add(new TaskContent(task.getTaskId(), phoneNum, null, customerServiceDetail.getUserId(), 0));
+                }
+                task.setIsImg(1L);
             }
 //            ArrayList<TaskContent> taskContents = new ArrayList<>();
 //            for (String s : phoneStrList) {
@@ -888,14 +907,7 @@ public class TaskServiceImpl implements ITaskService {
             task.setTaskId(taskId);
             task.setTaskStatus(0L);
             int i = taskMapper.updateTask(task);
-//            TaskContent taskContent = new TaskContent();
-//            taskContent.setTaskId(taskId);
             taskContentMapper.updateTaskContent4pausedTask(taskId);
-//            List<TaskContent> taskContents = taskContentMapper.selectTaskContentList(taskContent);
-//            for (TaskContent content : taskContents) {
-//                content.setTaskStatus(0);
-//            }
-//            taskContentMapper.updateTaskContentStartToBatch(taskContents);
             if (i <= 0) {
                 throw new ServiceException("未知错误，请联系管理员");
             }
@@ -917,16 +929,6 @@ public class TaskServiceImpl implements ITaskService {
                 int i = taskMapper.updateTask(task);
             }
             taskContentMapper.updateTaskContent4pausedOnesTask(taskId, customerServiceDetail.getUserId());
-//            TaskContent taskContent = new TaskContent();
-//            taskContent.setAssignedTo(customerServiceDetail.getUserId());
-//            taskContent.setTaskStatus(2);
-//            List<TaskContent> taskContents = taskContentMapper.selectTaskContentList(taskContent);
-//            for (TaskContent content : taskContents) {
-//                content.setTaskStatus(0);
-//            }
-//            if (!taskContents.isEmpty()) {
-//                taskContentMapper.updateTaskContentStartToBatch(taskContents);
-//            }
         }
     }
 

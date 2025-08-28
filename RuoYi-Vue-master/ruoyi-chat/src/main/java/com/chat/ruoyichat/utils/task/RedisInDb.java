@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.chat.ruoyichat.domain.*;
 import com.chat.ruoyichat.domain.dto.PhoneInfo;
+import com.chat.ruoyichat.domain.sendDto.AccountInfo;
 import com.chat.ruoyichat.mapper.*;
 import com.chat.ruoyichat.service.impl.SendMsgServiceImpl;
 import com.chat.ruoyichat.websocket.WebSocketService;
@@ -95,27 +96,31 @@ public class RedisInDb {
 
 
             PhoneInfo phoneInfo = new PhoneInfo();
-            if (!JSON.isValid(deviceInfo)) {
-                phoneInfo.setDeviceInfo(deviceInfo);
-                phoneInfo.setId(account.getAccountId().toString());
-                phoneInfo.setMyphonenumber(account.getAccount());
-                phoneInfo.setUserId(account.getAssignedTo());
-                phoneInfo.setCookie(account.getCookie());
-                phoneInfo.setUserName(account.getUserName());
-                phoneInfo.setDeviceInfo(deviceInfo);
-            }else {
-                JSONObject jsonObject = JSON.parseObject(deviceInfo);
-                phoneInfo.setId(account.getAccountId().toString());
-                phoneInfo.setMyphonenumber(account.getAccount());
-                phoneInfo.setUserId(account.getAssignedTo());
-                phoneInfo.setCookie(account.getCookie());
-                Object string = jsonObject.get("userName");
-                if (Objects.isNull(string)) {
-                    string = jsonObject.get("email");
-                }
-                phoneInfo.setUserName(string.toString());
-                phoneInfo.setDeviceInfo(deviceInfo);
-            }
+//            if (!JSON.isValid(deviceInfo)) {
+            phoneInfo.setDeviceInfo(deviceInfo);
+            phoneInfo.setId(account.getAccountId().toString());
+            phoneInfo.setMyphonenumber(account.getAccount());
+            phoneInfo.setUserId(account.getAssignedTo());
+            phoneInfo.setCookie(account.getCookie());
+            phoneInfo.setUserName(account.getUserName());
+            phoneInfo.setDeviceInfo(deviceInfo);
+//            }else {
+//            JSONObject jsonObject = JSON.parseObject(deviceInfo);
+//            phoneInfo.setId(account.getAccountId().toString());
+//            phoneInfo.setMyphonenumber(account.getAccount());
+//            phoneInfo.setUserId(account.getAssignedTo());
+//            phoneInfo.setCookie(account.getCookie());
+//            Object string = jsonObject.get("userName");
+//            if (Objects.isNull(string)) {
+//                string = jsonObject.get("email");
+//            }
+//            phoneInfo.setUserName(string.toString());
+//            phoneInfo.setDeviceInfo(deviceInfo);
+//            }
+            AccountInfo accountInfo = phoneInfo.getAccountInfo();
+            accountInfo.setAccount_sid(account.getUserName());
+            accountInfo.setAuth_token(account.getPassword());
+            accountInfo.setCurrentNumber("+" + account.getAccount());
 
             //去重
             if (!redisCache.checkAndLeftPush(isReplyKey, phoneInfo)) {
@@ -263,7 +268,7 @@ public class RedisInDb {
 //                        userSuccessNum.put(assignedTo, userSuccessNum.get(assignedTo) + 1L);
 //                    }
                     content.setTaskStatus(1);
-                    sendMsgServiceImpl.getSendMsgSuccess(content.getTaskContentId(), content.getRecipientList());
+//                    sendMsgServiceImpl.getSendMsgSuccess(content.getTaskContentId(), content.getRecipientList());
                 }
                 if (!taskContents2Update.isEmpty()) {
                     taskContentMapper.updateTaskContentStartToBatch(taskContents2Update);

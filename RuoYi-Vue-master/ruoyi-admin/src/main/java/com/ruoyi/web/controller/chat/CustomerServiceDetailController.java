@@ -256,14 +256,6 @@ public class CustomerServiceDetailController extends BaseController {
                 customerTaskStatusVo.setReplyNum(replyNum);
                 customerTaskStatusVo.setSuccessNum(successNum);
 
-                if (replyNum.equals(0L)) {
-                    customerTaskStatusVo.setReplyRate(0d);
-                } else {
-                    double replyRate = (double) replyNum / successNum * 100;
-                    // 格式化回复率，保留两位小数
-                    double v = Double.parseDouble(String.format("%.2f", replyRate));
-                    customerTaskStatusVo.setReplyRate(v);
-                }
                 customerTaskStatusVos.add(customerTaskStatusVo);
                 userIdSet.add(customerTaskStatusVo.getUserId());
             }
@@ -276,9 +268,22 @@ public class CustomerServiceDetailController extends BaseController {
                     } else {
                         customerTaskStatusVo.setSuccessNum(0L);
                     }
-                }else {
+                } else {
                     customerTaskStatusVo.setSuccessNum(0L);
 //                    continue;
+                }
+
+                if (customerTaskStatusVo.getReplyNum().equals(0L)) {
+                    customerTaskStatusVo.setReplyRate(0d);
+                } else {
+                    if (customerTaskStatusVo.getSuccessNum().equals(0L)) {
+                        customerTaskStatusVo.setReplyRate(0d);
+                    } else {
+                        double replyRate = (double) customerTaskStatusVo.getReplyNum() / customerTaskStatusVo.getSuccessNum() * 100;
+                        // 格式化回复率，保留两位小数
+                        double v = Double.parseDouble(String.format("%.2f", replyRate));
+                        customerTaskStatusVo.setReplyRate(v);
+                    }
                 }
 //                customerTaskStatusVo.setSuccessNum(userCount.get(customerTaskStatusVo.getUserId()));
             }
@@ -288,6 +293,9 @@ public class CustomerServiceDetailController extends BaseController {
         } else {
             //不是组长查自己
             Long userId1 = customerServiceDetail.getUserId();
+            HashSet<Long> userIdSet2getSuccess = new HashSet<>();
+            userIdSet2getSuccess.add(userId1);
+            HashMap<Long, Long> userCount = customerServiceDetailService.getSuccessMap(userIdSet2getSuccess);
             SysUser sysUser = sysUserMapper.selectUserById(userId1);
             CustomerTaskStatusVo customerTaskStatusVo = new CustomerTaskStatusVo();
             customerTaskStatusVo.setUserId(userId1);
@@ -305,7 +313,11 @@ public class CustomerServiceDetailController extends BaseController {
             Long maxLoad = customerServiceDetail.getMaxLoad();
             Long surplusNum = customerServiceDetail.getSurplusNum();
             Long replyNum = customerServiceDetail.getReplyNum();
-            Long successNum = customerServiceDetail.getSuccessNum();
+            Long successNum = 0L;
+            if (Objects.nonNull(userCount) && !userCount.isEmpty()) {
+                successNum = userCount.get(userId1);
+            }
+
 
             customerTaskStatusVo.setSendNum(sendNum);
             customerTaskStatusVo.setMaxLoad(maxLoad);
@@ -316,14 +328,15 @@ public class CustomerServiceDetailController extends BaseController {
             if (successNum.equals(0L)) {
                 customerTaskStatusVo.setReplyRate(0d);
             } else {
-                double replyRate = (double) replyNum / successNum * 100;
-                // 格式化回复率，保留两位小数
-                double v = Double.parseDouble(String.format("%.2f", replyRate));
-                customerTaskStatusVo.setReplyRate(v);
+                if (successNum.equals(0L)) {
+                    customerTaskStatusVo.setReplyRate(0d);
+                } else {
+                    double replyRate = (double) replyNum / successNum * 100;
+                    // 格式化回复率，保留两位小数
+                    double v = Double.parseDouble(String.format("%.2f", replyRate));
+                    customerTaskStatusVo.setReplyRate(v);
+                }
             }
-            HashSet<Long> userIdSet = new HashSet<>();
-            userIdSet.add(customerTaskStatusVo.getUserId());
-            HashMap<Long, Long> userCount = customerServiceDetailService.getSuccessMap(userIdSet);
             if (Objects.nonNull(userCount) && !userCount.isEmpty()) {
                 customerTaskStatusVo.setSuccessNum(userCount.get(customerTaskStatusVo.getUserId()));
             } else {

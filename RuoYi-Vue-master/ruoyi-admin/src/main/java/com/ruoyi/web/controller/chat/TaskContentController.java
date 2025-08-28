@@ -52,8 +52,8 @@ public class TaskContentController extends BaseController {
     @PreAuthorize("@ss.hasPermi('chat:TaskContent:export')")
     @Log(title = "任务内容，用于存储任务具体内容相关信息", businessType = BusinessType.EXPORT)
     @PostMapping("/export")
-    public void export(HttpServletResponse response, Long userId,Long taskId) {
-        List<TaskContent> list = taskContentService.selectTaskContentList4Export(userId);
+    public void export(HttpServletResponse response, Long userId,Long status) {
+        List<TaskContent> list = taskContentService.selectTaskContentList4Export(userId,status);
         ExcelUtil<TaskContent> util = new ExcelUtil<TaskContent>(TaskContent.class);
         util.exportExcel(response, list, "任务内容，用于存储任务具体内容相关信息数据");
     }

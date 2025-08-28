@@ -142,4 +142,20 @@ public class SessionRecordServiceImpl implements ISessionRecordService {
         jsonObject.put("collectUnreadNum", collectUnreadNum);
         return jsonObject;
     }
+
+    /**
+     * 对ai会话的打分
+     * <p>
+     * 1. 检查组长是否开启ai回复功能<br>
+     * 2. 检查会话是否开启ai<br>
+     * 3. 检查会话是否已经给ai打过分<br>
+     * 4. 分数入库
+     * @param sessionRecord 包含会话id（sessionId）和分数（score）
+     */
+    @Override
+    public void aiscore(SessionRecord sessionRecord) {
+        String sessionId = sessionRecord.getSessionId();
+        Integer aiScore = sessionRecord.getAiScore();
+        // todo 具体业务逻辑
+    }
 }

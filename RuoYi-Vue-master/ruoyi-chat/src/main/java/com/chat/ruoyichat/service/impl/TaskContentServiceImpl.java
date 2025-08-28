@@ -197,19 +197,28 @@ public class TaskContentServiceImpl implements ITaskContentService {
     }
 
     @Override
-    public List<TaskContent> selectTaskContentList4Export(Long userId) {
+    public List<TaskContent> selectTaskContentList4Export(Long userId, Long status) {
         List<TaskContent> taskContents;
         HashSet<Long> userIdSet = new HashSet<>();
         List<CustomerServiceDetail> customerServiceDetails = customerServiceDetailMapper.selectCustomerDetailByManagerId(userId);
         if (customerServiceDetails.isEmpty()) {
             //说明是组员
             userIdSet.add(userId);
-            taskContents = taskContentMapper.selectTaskContentList4Export(userIdSet);
+            if (status.equals(1L)) {
+                taskContents = taskContentMapper.selectTaskContentListSucc4Export(userIdSet);
+            } else {
+                taskContents = taskContentMapper.selectTaskContentListNoSucc4Export(userIdSet);
+            }
         }else {
             for (CustomerServiceDetail customerServiceDetail : customerServiceDetails) {
                 userIdSet.add(customerServiceDetail.getUserId());
             }
-            taskContents = taskContentMapper.selectTaskContentList4Export(userIdSet);
+            if (status.equals(1L)) {
+                taskContents = taskContentMapper.selectTaskContentListSucc4Export(userIdSet);
+            } else {
+                taskContents = taskContentMapper.selectTaskContentListNoSucc4Export(userIdSet);
+
+            }
         }
 
         //分配给的用户名称

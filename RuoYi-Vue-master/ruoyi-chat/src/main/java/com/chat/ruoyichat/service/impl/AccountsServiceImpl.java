@@ -4,11 +4,15 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.chat.ruoyichat.domain.*;
 import com.chat.ruoyichat.domain.dto.AccountStatus;
+import com.chat.ruoyichat.domain.sendDto.AccountInfo;
+import com.chat.ruoyichat.domain.sendDto.SendMsgObj;
 import com.chat.ruoyichat.mapper.*;
 import com.chat.ruoyichat.service.IAccountsService;
 import com.chat.ruoyichat.utils.excel.EasyExcelUtil;
 import com.chat.ruoyichat.websocket.WebSocketService;
+import com.ruoyi.common.constant.CacheConstants;
 import com.ruoyi.common.core.domain.entity.SysUser;
+import com.ruoyi.common.core.redis.RedisCache;
 import com.ruoyi.common.exception.ServiceException;
 import com.ruoyi.common.utils.SecurityUtils;
 import com.ruoyi.system.mapper.SysUserMapper;
@@ -52,7 +56,8 @@ public class AccountsServiceImpl implements IAccountsService {
     private ProjectMapper projectMapper;
     @Autowired
     private TaskSendNumMapper taskSendNumMapper;
-
+    @Autowired
+    private RedisCache redisCache;
     /**
      * 查询分配给的客服账号
      *
@@ -108,47 +113,27 @@ public class AccountsServiceImpl implements IAccountsService {
             return accounts1;
         }
         return accounts1;
-//        List<Accounts> accounts1 = accountsMapper.selectAccountsByAccountSetAndStatus(longs,accounts.getAccStatus());
-//        ArrayList<Accounts> accounts2 = new ArrayList<>();
-//        ArrayList<Accounts> accounts4 = new ArrayList<>();
-//        Long accStatus = accounts.getAccStatus();
-//        if (ObjectUtils.isEmpty(accStatus)) {
-//            getsendNum(accounts1);
-//            return accounts1;
-//        }
-//        for (Accounts accounts3 : accounts1) {
-//            if (accStatus.equals(-1L)) {
-//                accounts2.add(accounts3);
-//            } else {
-//                accounts4.add(accounts3);
-//            }
-//        }
-//        if (accStatus.equals(-1L)) {
-//            getsendNum(accounts2);
-//            return accounts2;
-//        } else {
-//            getsendNum(accounts4);
-//            return accounts4;
-//        }
     }
 
     private void getsendNum(List<Accounts> accounts1) {
         HashSet<String> accountSet = new HashSet<>();
-        for (Accounts accounts2 : accounts1) {
-            accountSet.add(accounts2.getAccount());
-            if (!JSON.isValid(accounts2.getDeviceInfo())) {
-                continue;
-            }
-            JSONObject jsonObject = JSON.parseObject(accounts2.getDeviceInfo());
-            Object o = jsonObject.get("virtualPhoneNumber");
-            if (Objects.nonNull(o)) {
-                JSONObject jsonObject2 = JSON.parseObject(o.toString());
-                Object o1 = jsonObject2.get("number");
-                accounts2.setNumber(o1.toString());
-            } else {
-                accounts2.setNumber(jsonObject.get("phone").toString());
-            }
-        }
+//        for (Accounts accounts2 : accounts1) {
+//            accountSet.add(accounts2.getAccount());
+//            System.out.println("deviceInfo=" + accounts2.getDeviceInfo() +
+//                    ", isValid=" + JSON.isValid(accounts2.getDeviceInfo()));
+//            if (!JSON.isValid(accounts2.getDeviceInfo())) {
+//                continue;
+//            }
+//            JSONObject jsonObject = JSON.parseObject(accounts2.getDeviceInfo());
+//            Object o = jsonObject.get("virtualPhoneNumber");
+//            if (Objects.nonNull(o)) {
+//                JSONObject jsonObject2 = JSON.parseObject(o.toString());
+//                Object o1 = jsonObject2.get("number");
+//                accounts2.setNumber(o1.toString());
+//            } else {
+//                accounts2.setNumber(jsonObject.get("phone").toString());
+//            }
+//        }
         HashMap<String, Long> sendNumMap = new HashMap<>();
         List<TaskSendNum> taskSendNums = taskSendNumMapper.selectTaskSendNumListByIds(accountSet);
         for (TaskSendNum taskSendNum : taskSendNums) {
@@ -241,52 +226,35 @@ public class AccountsServiceImpl implements IAccountsService {
     public ArrayList<Accounts> importAccount(MultipartFile file, String projectId) throws IOException {
         List<Accounts> ts = EasyExcelUtil.syncReadModel(file.getInputStream(), Accounts.class, 0, 1);
 //        projectId = getProjectIdByLoginUserId();
+        Date date = new Date();
+        String username = SecurityUtils.getUsername();
+        HashMap<String, JSONObject> BindingMap = new HashMap<>();
         List<Accounts> importAccountList = ts.stream()
                 .peek(accounts -> {
                     accounts.setProjectId(projectId);
-                    accounts.setUpUser(SecurityUtils.getUsername());
+                    accounts.setUpUser(username);
+                    accounts.setCreateTime(date);
+                    JSONObject jsonObject = new JSONObject();
+                    JSONObject accountInfo = new JSONObject();
+                    accountInfo.put("account_sid", accounts.getUserName());
+                    accountInfo.put("auth_token", accounts.getPassword());
+                    accountInfo.put("currentNumber", "+"+accounts.getAccount());
+                    accountInfo.put("callback_url", "/Msg/reBack");
+                    jsonObject.put("accountInfo", accountInfo);
+                    BindingMap.put(accounts.getUserName(), jsonObject);
                 })
                 .collect(Collectors.toList());
-        importAccountList.forEach(accounts -> {
-            accounts.setCreateTime(new Date());
-            String deviceInfo = accounts.getDeviceInfo();
-            if (JSON.isValid(deviceInfo)) {
-                JSONObject jsonObject = JSON.parseObject(deviceInfo);
-                Object o = jsonObject.get("token");
-                if (Objects.nonNull(o)) {
-                    accounts.setCookie(o.toString());
-                }
-            }
-//            else {
-//                throw new ServiceException("deviceInfo格式错误");
-//            }
-        });
         List<Accounts> repeatAccount = accountsMapper.isRepeat(importAccountList);
         if (!repeatAccount.isEmpty()) {
             return new ArrayList<>(repeatAccount);
         }
-        accountsMapper.insertImportBatch(importAccountList);
+        String scriptBinding = CacheConstants.SCRIPTBINDING;
 
-        //导入时推入redis 扫描是否封号
-//        ArrayList<Accounts> repeat = new ArrayList<>();
-//        for (Accounts account : importAccountList) {
-//            Long accountId = account.getAccountId();
-//            if(ObjectUtils.isEmpty(accountId)) {
-//                repeat.add(account);
-//                continue;
-//            }
-//            String deviceInfo = account.getDeviceInfo();
-//            JSONObject jsonObject = JSON.parseObject(deviceInfo);
-//            PhoneInfo phoneInfo = new PhoneInfo();
-//            Long userId = account.getAssignedTo();
-//            phoneInfo.setId(accountId.toString());
-//            phoneInfo.setMyphonenumber(account.getAccount());
-//            phoneInfo.setUserId(account.getAssignedTo());
-//            phoneInfo.setCookie(account.getCookie());
-//            phoneInfo.setUserName(jsonObject.get("userName").toString());
-//            phoneInfo.setDeviceInfo(deviceInfo);
-//            redisCache.leftPush(isReplyKey, phoneInfo);
-//        }
+        BindingMap.forEach((k, v) -> {
+            redisCache.addToSet(scriptBinding,v);
+        });
+        accountsMapper.insertImportBatch(importAccountList);
+        //
         return new ArrayList<>();
     }
 
@@ -326,41 +294,6 @@ public class AccountsServiceImpl implements IAccountsService {
             return new ArrayList<>(repeatAccount);
         }
         accountsMapper.insertImportBatch(importAccountList);
-//        List<Accounts> ts = EasyExcelUtil.syncReadModel(file.getInputStream(), Accounts.class, 0, 1);
-////        projectId = getProjectIdByLoginUserId();
-//        List<Accounts> importAccountList = ts.stream()
-//                .peek(accounts -> {
-//                    accounts.setProjectId(projectId);
-//                    accounts.setUpUser(SecurityUtils.getUsername());
-//                })
-//                .collect(Collectors.toList());
-//        importAccountList.forEach(accounts -> accounts.setCreateTime(new Date()));
-//        List<Accounts> repeatAccount = accountsMapper.isRepeat(importAccountList);
-//        if (!repeatAccount.isEmpty()) {
-//            return new ArrayList<>(repeatAccount);
-//        }
-//        accountsMapper.insertImportBatch(importAccountList);
-
-        //导入时推入redis 扫描是否封号
-//        ArrayList<Accounts> repeat = new ArrayList<>();
-//        for (Accounts account : importAccountList) {
-//            Long accountId = account.getAccountId();
-//            if(ObjectUtils.isEmpty(accountId)) {
-//                repeat.add(account);
-//                continue;
-//            }
-//            String deviceInfo = account.getDeviceInfo();
-//            JSONObject jsonObject = JSON.parseObject(deviceInfo);
-//            PhoneInfo phoneInfo = new PhoneInfo();
-//            Long userId = account.getAssignedTo();
-//            phoneInfo.setId(accountId.toString());
-//            phoneInfo.setMyphonenumber(account.getAccount());
-//            phoneInfo.setUserId(account.getAssignedTo());
-//            phoneInfo.setCookie(account.getCookie());
-//            phoneInfo.setUserName(jsonObject.get("userName").toString());
-//            phoneInfo.setDeviceInfo(deviceInfo);
-//            redisCache.leftPush(isReplyKey, phoneInfo);
-//        }
         return new ArrayList<>();
     }
 

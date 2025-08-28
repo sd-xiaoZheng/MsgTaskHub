@@ -95,6 +95,12 @@ public class CustomerServiceDetail extends BaseEntity {
     private String userName;
     private List<CustomerServiceDetail> children;
 
+    /**
+     * 创建组长时，选择是否开启ai回复（1开，0关）（默认0）
+     */
+    @Excel(name = "创建组长时，选择是否开启ai回复（1开，0关）（默认0）")
+    private Integer switcher;
+
     //回复率
     private Double replyRate;
 

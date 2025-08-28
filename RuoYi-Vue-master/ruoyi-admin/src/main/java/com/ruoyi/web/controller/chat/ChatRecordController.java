@@ -101,4 +101,20 @@ public class ChatRecordController extends BaseController
     {
         return toAjax(chatRecordService.deleteChatRecordByChatIds(chatIds));
     }
+
+    /**
+     * 对ai单句回复的打分入库
+     * @param chatRecord 包含chat_id（聊天记录唯一标识）与score（评分）
+     * @return {@code AjaxResult}
+     */
+    // todo 对ai单句回复的打分入库
+    @PostMapping("/aiscore")
+    @Log(title = "对ai单句回复的打分入库", businessType = BusinessType.UPDATE)
+    public AjaxResult aiscore(@RequestBody ChatRecord chatRecord) {
+        chatRecordService.aiscore(chatRecord);
+        return AjaxResult.success("ai单句回复打分保存成功");
+    }
+
+    // todo 准备给ai提供打分相关数据（未定）
+
 }

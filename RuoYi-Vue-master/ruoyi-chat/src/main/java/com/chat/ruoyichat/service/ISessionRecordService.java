@@ -69,4 +69,5 @@ public interface ISessionRecordService
 
     JSONObject sessionUnread(Long userId);
 
+    void aiscore(SessionRecord sessionRecord);
 }

@@ -2,15 +2,13 @@ package com.chat.ruoyichat.service;
 
 
 import com.alibaba.fastjson2.JSONObject;
-import com.chat.ruoyichat.domain.Accounts;
 import com.chat.ruoyichat.domain.dto.BackMsg;
-import com.chat.ruoyichat.domain.dto.CallBackItem;
-import com.chat.ruoyichat.domain.dto.CallBackObj;
 import com.chat.ruoyichat.domain.dto.PhoneInfo;
+import com.chat.ruoyichat.domain.sendDto.AccountInfo;
 import com.chat.ruoyichat.domain.sendDto.SendMsgObj;
+import com.chat.ruoyichat.domain.vo.ReBack2;
 
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,26 +23,24 @@ public interface ISendMsgService {
 
     SendMsgObj getSendMsg(Long taskProjectId, Long userId);
 
-    void getSendMsgSuccess(String taskContentId,String account);
+    void getSendMsgSuccess(SendMsgObj sendMsgObj);
 
-    void getSendMsgF(String taskContentId, String account);
+    void getSendMsgF(SendMsgObj sendMsgObj);
 
 //    void disable(String account,String reason);
     void disable(String account);
 
-    List<PhoneInfo> getPhoneInfos(int count);
+    PhoneInfo getPhoneInfos(int count);
 
     Integer backMsgs(BackMsg backMsg) throws ParseException;
 
-    List<PhoneInfo> checkBan(Integer count);
+    PhoneInfo checkBan(Integer count);
 
     void deleteSys();
 
-    void setToken(String userName, String token);
+    void reBack(JSONObject jsonObject);
 
-    String getToken(String userName);
+    Object accountBinding();
 
-    void reBack(CallBackObj jsonObject);
-
-    ArrayList<Long> uploadAccount(Accounts accounts);
+    void reBack2(ReBack2 reBack2);
 }

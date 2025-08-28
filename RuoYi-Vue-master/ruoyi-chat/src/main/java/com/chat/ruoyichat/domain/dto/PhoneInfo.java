@@ -1,5 +1,6 @@
 package com.chat.ruoyichat.domain.dto;
 
+import com.chat.ruoyichat.domain.sendDto.AccountInfo;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,4 +23,5 @@ public class PhoneInfo implements Serializable {
     private String cookie;
     private String userName;
     private String deviceInfo;
+    private AccountInfo accountInfo=new AccountInfo();
 }

@@ -15,10 +15,11 @@ import lombok.ToString;
 @ToString
 public class MsgBoj {
     private Long id;
-    private String username;//发送的账号
-    private String contact_value;//回复人手机号
+    private String to;//发送的账号
+    private String from;//回复人手机号
     private String contact_name;//回复人名称
     private String read;//是否阅读
-    private String message;//消息
-    private String date;//时间
+    private String body;//消息
+    private String date_sent;//时间
+    private Long date;//时间
 }

@@ -8,6 +8,7 @@ import com.chat.ruoyichat.domain.Accounts;
 import com.chat.ruoyichat.domain.ChatRecord;
 import com.chat.ruoyichat.domain.SessionRecord;
 import com.chat.ruoyichat.domain.dto.Message;
+import com.chat.ruoyichat.domain.sendDto.AccountInfo;
 import com.chat.ruoyichat.domain.sendDto.SendMsgObj;
 import com.chat.ruoyichat.mapper.AccountsMapper;
 import com.chat.ruoyichat.mapper.ChatRecordMapper;
@@ -109,6 +110,9 @@ public class WebSocketService {
         switch (flag) {
             case "1":
                 sendMessage(text, session);
+                break;
+            case "5":
+                ChangeSubject(jsonObject);
                 break;
             default:
                 log.info("websocket没有该Flag");
@@ -240,7 +244,14 @@ public class WebSocketService {
         sendMsgObj.setCookie(accounts.getCookie());
         sendMsgObj.setDeviceInfo(accounts.getDeviceInfo());
         sendMsgObj.setIsChat("1");
-        sendMsgObj.setPassword(accounts.getPassword());
+        AccountInfo accountInfo = sendMsgObj.getAccountInfo();
+
+        accountInfo.setAccount_sid(accounts.getUserName());
+        accountInfo.setAuth_token(accounts.getPassword());
+        accountInfo.setCurrentNumber("+"+accounts.getAccount());
+        accountInfo.setMessage(message);
+        accountInfo.setRecipient(phone);
+
         redisCache.leftPush(key+sysUser.getUserId(), sendMsgObj);
         //websocket 返回
     }
@@ -251,4 +262,21 @@ public class WebSocketService {
         String[] split = url.split("/");
         return split[split.length - 1];
     }
+
+    private void ChangeSubject(JSONObject json) throws IOException {
+        //修改数据库
+        //修改redis
+        Object o = json.get("data");
+        JSONObject jsonObject = JSON.parseObject(o.toString());
+        String string = jsonObject.toString();
+        System.out.println(string);
+//        Object theme = jsonObject.get("theme");
+//        redisCache.setCacheObject("sys_config:sys.index.sideTheme",theme.toString());
+//        SysConfig sysConfig = new SysConfig();
+//        sysConfig.setConfigId(3L);
+//        sysConfig.setConfigValue(theme.toString());
+//        sysConfigMapper.updateConfig(sysConfig);
+        BroadCastInfo(json.toString());
+    }
+
 }

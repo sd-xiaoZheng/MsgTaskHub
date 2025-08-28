@@ -58,4 +58,6 @@ public interface IChatRecordService
      * @return 结果
      */
     public int deleteChatRecordByChatId(String chatId);
+
+    void aiscore(ChatRecord chatRecord);
 }

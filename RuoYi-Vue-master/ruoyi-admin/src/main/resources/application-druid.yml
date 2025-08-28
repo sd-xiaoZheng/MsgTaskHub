@@ -6,7 +6,10 @@ spring:
         druid:
             # 主库数据源
             master:
-#                url: jdbc:mysql://43.135.145.122:3306/juheim?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
+#                url: jdbc:mysql://43.153.36.109:3306/juheim?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
+#                username: juheim
+#                password: G244rzFNw7HtbLzp
+#                url: jdbc:mysql://43.135.145.122:3306/textgrid?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
 #                username: juheim
 #                password: G244rzFNw7HtbLzp
 #                url: jdbc:mysql://170.106.175.176:3306/juheim?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
@@ -18,9 +21,22 @@ spring:
 #                url: jdbc:mysql://43.153.10.200:3306/chatdata?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
 #                username: root
 #                password: zaohu279982
-                url: jdbc:mysql://localhost:3306/juheim?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
+
+#                线下
+#                url: jdbc:mysql://192.168.1.48:3306/textgrid?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
+#                username: root
+#                password: zaohu279982
+#
+
+#                url: jdbc:mysql://43.153.50.144:3306/juheim?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
+#                username: juheim
+#                password: G244rzFNw7HtbLzp
+##
+                url: jdbc:mysql://localhost:3306/juheend?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
                 username: root
                 password: zaohu279982
+
+
 #                url: jdbc:mysql://43.130.27.51:3306/juheim?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&allowMultiQueries=true
 #                username: juheim
 #                password: G244rzFNw7HtbLzp

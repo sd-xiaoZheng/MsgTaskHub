@@ -145,7 +145,6 @@ public class PresetReplyController extends BaseController
     @Log(title = "导入任务", businessType = BusinessType.IMPORT)
     @PostMapping("/import")
     public AjaxResult importData(MultipartFile file, String projectId, Long replyWeight, String title) throws Exception {
-        String operName = SecurityUtils.getUsername();
         String message = presetReplyService.importPresetReplyList(file, projectId, replyWeight, title);
         return AjaxResult.success(message);
     }

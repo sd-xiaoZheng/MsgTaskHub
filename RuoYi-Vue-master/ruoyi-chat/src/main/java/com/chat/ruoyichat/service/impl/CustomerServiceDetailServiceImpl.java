@@ -127,11 +127,13 @@ public class CustomerServiceDetailServiceImpl implements ICustomerServiceDetailS
         if (!userIdSet.isEmpty()) {
             List<Accounts> accounts1 = accountsMapper.selectAccountsByAccountSet(userIdSet);
             for (Accounts accounts : accounts1) {
-                Integer i = accountCount.get(accounts.getAssignedTo());
-                if (ObjectUtils.isEmpty(i)) {
-                    accountCount.put(accounts.getAssignedTo(), 1);
-                } else {
-                    accountCount.put(accounts.getAssignedTo(), i + 1);
+                if (accounts.getDelFlag().equals(0)) {
+                    Integer i = accountCount.get(accounts.getAssignedTo());
+                    if (ObjectUtils.isEmpty(i)) {
+                        accountCount.put(accounts.getAssignedTo(), 1);
+                    } else {
+                        accountCount.put(accounts.getAssignedTo(), i + 1);
+                    }
                 }
             }
         }

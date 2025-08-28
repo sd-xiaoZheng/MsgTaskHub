@@ -84,4 +84,6 @@ public class CacheConstants
 //  存储Token
     public static final String Token = "Token:";
 
+//账号导进来把账号丢进来，然后脚本读取 去绑定
+    public static final String SCRIPTBINDING = "ScriptBinding:";
 }

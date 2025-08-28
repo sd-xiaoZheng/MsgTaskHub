@@ -8,15 +8,15 @@ import org.apache.ibatis.annotations.Param;
 
 /**
  * 任务内容，用于存储任务具体内容相关信息Mapper接口
- * 
+ *
  * @author ruoyi
  * @date 2025-03-04
  */
-public interface TaskContentMapper 
+public interface TaskContentMapper
 {
     /**
      * 查询任务内容，用于存储任务具体内容相关信息
-     * 
+     *
      * @param taskContentId 任务内容，用于存储任务具体内容相关信息主键
      * @return 任务内容，用于存储任务具体内容相关信息
      */
@@ -24,7 +24,7 @@ public interface TaskContentMapper
 
     /**
      * 查询任务内容，用于存储任务具体内容相关信息列表
-     * 
+     *
      * @param taskContent 任务内容，用于存储任务具体内容相关信息
      * @return 任务内容，用于存储任务具体内容相关信息集合
      */
@@ -32,7 +32,7 @@ public interface TaskContentMapper
 
     /**
      * 新增任务内容，用于存储任务具体内容相关信息
-     * 
+     *
      * @param taskContent 任务内容，用于存储任务具体内容相关信息
      * @return 结果
      */
@@ -40,7 +40,7 @@ public interface TaskContentMapper
 
     /**
      * 修改任务内容，用于存储任务具体内容相关信息
-     * 
+     *
      * @param taskContent 任务内容，用于存储任务具体内容相关信息
      * @return 结果
      */
@@ -48,7 +48,7 @@ public interface TaskContentMapper
 
     /**
      * 删除任务内容，用于存储任务具体内容相关信息
-     * 
+     *
      * @param taskContentId 任务内容，用于存储任务具体内容相关信息主键
      * @return 结果
      */
@@ -56,7 +56,7 @@ public interface TaskContentMapper
 
     /**
      * 批量删除任务内容，用于存储任务具体内容相关信息
-     * 
+     *
      * @param taskContentIds 需要删除的数据主键集合
      * @return 结果
      */
@@ -103,4 +103,10 @@ public interface TaskContentMapper
     void deleteByUserIdSet(@Param("userIdMap") HashSet<Long> userIdMap);
 
     TaskContent selectTaskContentByCust(String contactValue);
+
+    int selectTaskContentListCount(TaskContent taskContent1);
+
+    List<TaskContent> selectTaskContentListSucc4Export(HashSet<Long> userIdSet);
+
+    List<TaskContent> selectTaskContentListNoSucc4Export(HashSet<Long> userIdSet);
 }

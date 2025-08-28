@@ -16,7 +16,7 @@ import lombok.ToString;
 public class SendMsgObj {
     /**
      *         "id": 2774149,
-//     *         "mobileNum": "esmeraldalapointe3636@hotmail.com",
+     *         "mobileNum": "esmeraldalapointe3636@hotmail.com",
      *         "myphonenumber": "esmeraldalapointe3636@hotmail.com",
      *         "type": "text",
      *         "text": "Sorry to intrude! I'm Cody  I'd Iike to discuss a position that couId be a great match for your profiIe. Can we speak for a few minutes now?",
@@ -39,6 +39,16 @@ public class SendMsgObj {
     private String cookie;
     private String deviceInfo;
     private String isChat;
-    private String base64;
-    private String password;
+    private AccountInfo accountInfo=new AccountInfo();
 }
+
+
+
+
+
+
+
+
+
+
+

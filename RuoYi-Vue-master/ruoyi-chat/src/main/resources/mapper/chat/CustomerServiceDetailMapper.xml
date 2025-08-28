@@ -21,6 +21,7 @@
         <result property="surplusNum" column="surplus_num"/>
         <result property="replyNum" column="reply_num"/>
         <result property="version" column="version"/>
+        <result property="switcher" column="switcher"/>
         <collection property="children" resultMap="KefuResult"/>
     </resultMap>
 
@@ -46,6 +47,7 @@
                surplus_num,
                reply_num,
                csd.version,
+               csd.switcher,
                su.user_name,
                p.project_name,
                su.status,
@@ -94,6 +96,9 @@
             </if>
             <if test="version != null ">
                 and csd.version = #{version}
+            </if>
+            <if test="switcher != null ">
+                and csd.switcher = #{switcher}
             </if>
             <if test="status != null ">
                 and su.status = #{status}
@@ -153,6 +158,9 @@
             <if test="version != null">
                 version,
             </if>
+            <if test="switcher != null">
+                switcher,
+            </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="customerId != null">
@@ -196,6 +204,9 @@
             </if>
             <if test="version != null">
                 #{version},
+            </if>
+            <if test="switcher != null">
+                #{switcher},
             </if>
         </trim>
     </insert>
@@ -241,6 +252,9 @@
             </if>
             <if test="version != null">
                 version = #{version} + 1,
+            </if>
+            <if test="switcher != null">
+                switcher = #{switcher},
             </if>
         </trim>
         where 1=1
@@ -327,11 +341,11 @@
 
     <insert id="insertCustomerServiceDetailBatch" parameterType="java.util.List">
         insert into customer_service_detail (customer_id,manager_id,project_id, max_load,
-        send_num,success_num,ban_num,user_id,is_enough)
+        send_num,success_num,ban_num,user_id,is_enough,switcher)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (#{item.customerId},#{item.managerId}, #{item.projectId}, #{item.maxLoad},
-            #{item.sendNum},#{item.successNum},#{item.banNum},#{item.userId},#{item.isEnough})
+            #{item.sendNum},#{item.successNum},#{item.banNum},#{item.userId},#{item.isEnough},#{item.switcher})
         </foreach>
     </insert>
 
@@ -354,7 +368,7 @@
     <update id="updateCustomerServiceemptyAccount">
         UPDATE customer_service_detail
         SET is_enough = 0
-        WHERE project_id = #{projectId}
+        WHERE project_id = #{projectId} and is_enough &lt; 2
     </update>
 
     <select id="selectCustomerDetailByUserIdAndManager" resultMap="CustomerServiceDetailResult">
@@ -447,6 +461,9 @@
             </if>
             <if test="version != null">
                 version = #{version} + 1,
+            </if>
+            <if test="switcher != null">
+                switcher = #{switcher},
             </if>
         </trim>
         where #{surplusNum} &lt;= #{maxLoad}
